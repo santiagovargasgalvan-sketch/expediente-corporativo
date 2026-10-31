@@ -1,0 +1,1283 @@
+<title>Expediente Corporativo (demo)</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap">
+<style>
+/* Layout: registro de dos paneles. Índice de sociedades a la izquierda, expediente vivo a la derecha. */
+:root{
+  --bg:#F2F4F6; --surface:#FFFFFF; --sunken:#E8ECF0; --ink:#121B25; --muted:#5A6676; --line:#D8DFE6;
+  --accent:#0E5C55; --accent-ink:#FFFFFF; --accent-soft:#DCECE9;
+  --warn:#8A5300; --warn-soft:#FAEFD9; --bad:#A12F28; --bad-soft:#F7E2DF; --ok:#2E6A35; --ok-soft:#E1F0E2;
+  --shadow:0 1px 2px rgba(18,27,37,.06), 0 8px 24px rgba(18,27,37,.06);
+  --f-display:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --f-body:"Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --r:8px;
+  --ie:#4B3BB0; --ie-soft:#E9E6FA;
+  --c1:#2a78d6; --c2:#eb6834; --c3:#1baf7a; --c4:#eda100; --c5:#e87ba4; --c6:#008300; --c7:#6250d6; --c8:#e34948; --c0:#9aa5b1;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0D1318; --surface:#141C23; --sunken:#1A242D; --ink:#E4EAF0; --muted:#94A1AE; --line:#26313B;
+  --accent:#5CC0B2; --accent-ink:#06201D; --accent-soft:#15302C;
+  --warn:#E3AA52; --warn-soft:#33270F; --bad:#EE8B82; --bad-soft:#3A1D1A; --ok:#86C98D; --ok-soft:#18301B;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25); --ie:#B3A9F5; --ie-soft:#252040; --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#008300; --c7:#9085e9; --c8:#e66767; --c0:#6b7682; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0D1318; --surface:#141C23; --sunken:#1A242D; --ink:#E4EAF0; --muted:#94A1AE; --line:#26313B;
+  --accent:#5CC0B2; --accent-ink:#06201D; --accent-soft:#15302C;
+  --warn:#E3AA52; --warn-soft:#33270F; --bad:#EE8B82; --bad-soft:#3A1D1A; --ok:#86C98D; --ok-soft:#18301B;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25); --ie:#B3A9F5; --ie-soft:#252040; --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#008300; --c7:#9085e9; --c8:#e66767; --c0:#6b7682; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;text-wrap:balance;margin:0;letter-spacing:-.01em}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.muted{color:var(--muted)}
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-block:14px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));border-bottom:1px solid var(--line);background:var(--surface)}
+.brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.brand h1{font-size:20px}
+.brand span{color:var(--muted);font-size:13px}
+.conn{margin-left:auto;font-size:12px;display:flex;align-items:center;gap:6px;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)}
+
+.layout{display:grid;grid-template-columns:290px minmax(0,1fr);min-height:calc(100vh - 60px)}
+aside{border-right:1px solid var(--line);background:var(--surface);padding-block:16px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:16px;display:flex;flex-direction:column;gap:12px}
+main{padding-block:20px 48px;padding-left:24px;padding-right:max(24px, env(safe-area-inset-right, 0px));min-width:0}
+@media (max-width:860px){
+  .layout{grid-template-columns:1fr}
+  aside{border-right:0;border-bottom:1px solid var(--line);padding-right:max(16px, env(safe-area-inset-right, 0px))}
+  .soc-list{max-height:220px}
+  main{padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+}
+.search{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg)}
+.soc-list{display:flex;flex-direction:column;gap:2px;overflow:auto;margin:0;padding:0;list-style:none}
+.soc-item{width:100%;text-align:left;border:0;background:none;padding:9px 10px;border-radius:6px;cursor:pointer;display:flex;flex-direction:column;gap:1px}
+.soc-item:hover{background:var(--sunken)}
+.soc-item[aria-current="true"]{background:var(--accent-soft)}
+.soc-item b{font-weight:600;font-size:13.5px}
+.soc-item small{color:var(--muted);font-size:12px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:var(--r);border:1px solid var(--line);background:var(--surface);cursor:pointer;font-weight:600;font-size:13px;white-space:nowrap}
+.btn:hover{background:var(--sunken)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{border-color:transparent;background:none}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.small{padding:4px 9px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.notice{padding:10px 12px;border-radius:var(--r);font-size:13px;background:var(--warn-soft);color:var(--warn)}
+.notice.info{background:var(--accent-soft);color:var(--ink)}
+
+.head{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;justify-content:space-between;margin-bottom:16px}
+.head h2{font-size:28px;line-height:1.15}
+.head .acts{display:flex;gap:8px;flex-wrap:wrap}
+.idcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:14px;display:flex;flex-direction:column;gap:16px}
+.id-top{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;justify-content:space-between}
+.id-top h2{font-size:28px;line-height:1.15}
+.id-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.stat{background:var(--bg);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.stat .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.stat .v.mono{font-size:18px;letter-spacing:.04em}
+.stat small{color:var(--muted);font-size:12px}
+.stat .falta{font-size:14px;font-weight:600;color:var(--warn)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:20px}
+.fact{background:var(--surface);box-shadow:inset -1px -1px 0 var(--line);padding:10px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.fact .v{font-weight:600;overflow-wrap:anywhere}
+.fme{font-family:var(--f-mono);letter-spacing:.04em}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:20px;overflow-x:auto}
+.tab{border:0;background:none;padding:10px 14px;cursor:pointer;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-width:0}
+.card h3{font-size:17px;margin-bottom:2px}
+.card .src{font-size:12px;color:var(--muted);margin-bottom:12px}
+.card.wide{grid-column:1/-1}
+
+.caps{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:8px 0 16px}
+.cap .v{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr.total td{font-weight:700;border-bottom:0;border-top:2px solid var(--ink)}
+.bar{height:6px;border-radius:3px;background:var(--sunken);min-width:60px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.pct{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+
+.people{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.people li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}
+.people li:last-child{border-bottom:0}
+.people .role{color:var(--muted);font-size:13px;text-align:right}
+.kv{display:grid;grid-template-columns:120px minmax(0,1fr);gap:6px 12px;font-size:13.5px}
+.kv dt{color:var(--muted)} .kv dd{margin:0;overflow-wrap:anywhere}
+
+.alerts{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.alert{padding:8px 12px;border-radius:6px;font-size:13px;display:flex;gap:8px}
+.alert.bad{background:var(--bad-soft);color:var(--bad)}
+.alert.warn{background:var(--warn-soft);color:var(--warn)}
+
+.timeline{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.mov{display:grid;grid-template-columns:110px minmax(0,1fr);gap:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+@media (max-width:560px){.mov{grid-template-columns:1fr;gap:6px}}
+.mov .date{font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+.mov h4{margin:0 0 4px;font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.chip{font-size:11.5px;padding:2px 8px;border-radius:999px;background:var(--sunken);font-weight:600}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.mov ul{margin:6px 0 0;padding-left:18px}
+.mov .row-acts{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+
+.chrono{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;max-width:75ch}
+.ia-out{white-space:pre-wrap;max-width:75ch;line-height:1.6}
+
+.empty{max-width:560px;margin:40px auto;text-align:center;display:flex;flex-direction:column;gap:12px;align-items:center}
+.empty h2{font-size:24px}
+.empty p{color:var(--muted);margin:0}
+
+/* Ficha visual */
+.idrow{display:flex;gap:16px;align-items:center;min-width:0}
+.mono-av{width:56px;height:56px;border-radius:14px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-family:var(--f-display);font-weight:600;font-size:22px;flex:none}
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.pill{font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--sunken);color:var(--ink)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.ie{background:var(--ie-soft);color:var(--ie)}
+.card.ie{border:1px solid var(--ie);box-shadow:inset 4px 0 0 var(--ie)}
+.ie-big{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ie);line-height:1.1}
+.nac{font-size:11px;font-weight:600;padding:1px 7px;border-radius:999px;background:var(--ie-soft);color:var(--ie);margin-left:6px;white-space:nowrap}
+.stat{position:relative;padding-left:58px}
+.ico{position:absolute;left:12px;top:12px;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:#fff}
+.ico svg{width:18px;height:18px}
+.typebar{display:flex;height:8px;border-radius:4px;overflow:hidden;gap:2px;margin:6px 0 4px;background:var(--surface)}
+.typebar i{display:block;height:100%}
+.facts .fact{flex-direction:row;gap:10px;align-items:flex-start}
+.facts .fact .fi{color:var(--muted);flex:none;margin-top:2px}
+.facts .fact .fi svg{width:18px;height:18px}
+.facts .fact>div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.captable{display:grid;grid-template-columns:200px minmax(0,1fr);gap:24px;align-items:center}
+@media (max-width:640px){.captable{grid-template-columns:1fr;justify-items:center}}
+.donut{width:200px;height:200px;display:block}
+.donut circle.seg{transition:stroke-width .15s,opacity .15s;cursor:pointer}
+.donut.hl circle.seg{opacity:.35} .donut.hl circle.seg.on{opacity:1;stroke-width:30}
+.donut text{fill:var(--ink);font-family:var(--f-body)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:8px;vertical-align:-1px}
+tr.sh{cursor:pointer} tr.sh:hover td,tr.sh.on td{background:var(--sunken)}
+tr.shist td{background:var(--bg);font-size:13px}
+.av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;flex:none;color:var(--ink)}
+.people.v2 li{align-items:center;justify-content:flex-start;gap:12px}
+.people.v2 .who{display:flex;flex-direction:column;min-width:0}
+.people.v2 .who small{color:var(--muted)}
+.tl-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.fchip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:12.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.fchip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tl{list-style:none;margin:0;padding:0;position:relative}
+.tl::before{content:"";position:absolute;left:79px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.tl>li{display:grid;grid-template-columns:64px 32px minmax(0,1fr);gap:0;align-items:start;padding:6px 0}
+.tl .yr{font-family:var(--f-mono);font-size:12.5px;color:var(--muted);text-align:right;padding-right:8px;padding-top:9px;line-height:1.2}
+.tl .node{width:14px;height:14px;border-radius:50%;margin:10px auto 0;box-shadow:0 0 0 3px var(--surface);position:relative;z-index:1}
+.tl .body{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;background:var(--surface);cursor:pointer;text-align:left;width:100%}
+.tl .body:hover{border-color:var(--accent)}
+.tl .body h4{margin:0;font-size:14.5px}
+.tl .body .meta{font-size:12.5px;color:var(--muted)}
+.tl .det{margin-top:8px;font-size:13.5px}
+.tl .det ul{margin:4px 0 0;padding-left:18px}
+.kpi-note{font-size:12px;color:var(--muted)}
+
+/* Modal */
+.ovl{position:fixed;inset:0;background:rgba(10,16,22,.55);display:flex;align-items:flex-start;justify-content:center;padding:max(24px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) 24px max(12px, env(safe-area-inset-left, 0px));overflow:auto;z-index:50}
+.modal{background:var(--surface);border-radius:12px;box-shadow:var(--shadow);width:min(920px,100%);display:flex;flex-direction:column}
+.modal header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)}
+.modal header h2{font-size:20px}
+.modal .body{padding:16px 20px;display:flex;flex-direction:column;gap:18px}
+.modal footer{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid var(--line);flex-wrap:wrap;align-items:center}
+.modal footer .msg{margin-right:auto;font-size:13px;color:var(--bad)}
+fieldset{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px 14px;margin:0;display:flex;flex-direction:column;gap:12px;min-width:0}
+legend{font-weight:700;font-size:13px;padding:0 6px}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px 12px}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f>span{font-size:12px;color:var(--muted);font-weight:600}
+.f input,.f select,.f textarea,.rows input,.rows select{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg);min-width:0}
+.f textarea{min-height:64px;resize:vertical}
+.f.full{grid-column:1/-1}
+.rows{display:flex;flex-direction:column;gap:6px}
+.rowhead,.row{display:grid;gap:6px;align-items:center}
+.rowhead{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.rows-wrap{overflow-x:auto}
+.rows-inner{min-width:560px;display:flex;flex-direction:column;gap:6px}
+.acuerdo{border-left:3px solid var(--accent)}
+.acuerdo .ahead{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.add-acuerdo{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.add-acuerdo select{padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+.reader{background:var(--accent-soft);border:1px dashed var(--accent);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:10px}
+.reader p{margin:0}
+.reader textarea{width:100%;min-height:90px;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);resize:vertical}
+.reader .line{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.status{font-size:13px}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="top">
+  <div class="brand"><h1>Expediente Corporativo</h1><span>Notaría 26 · Área Corporativo · <b style="color:var(--accent)">Demo con datos ficticios</b></span></div>
+  <div class="conn" id="conn"><i class="dot"></i><span>Conectando…</span></div>
+</div>
+<div class="layout">
+  <aside>
+    <button class="btn primary" id="btnNueva" type="button">+ Nueva sociedad</button>
+    <input class="search" id="q" type="search" placeholder="Buscar por nombre, RFC o folio" aria-label="Buscar sociedad">
+    <ul class="soc-list" id="socList"></ul>
+  </aside>
+  <main id="main">
+    <div class="empty">
+      <h2>Cargando expedientes…</h2>
+      <p>Aquí aparecerán las sociedades registradas con su cuadro accionario y órgano de administración vigentes.</p>
+    </div>
+  </main>
+</div>
+<div id="modalRoot"></div>
+
+<script>
+/* ============ Utilidades ============ */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const fdate = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); return m ? `${+m[3]} ${MES[+m[2]-1]} ${m[1]}` : (iso ? String(iso) : '—'); };
+const nf = new Intl.NumberFormat('es-MX');
+const mf = new Intl.NumberFormat('es-MX', {style:'currency', currency:'MXN', maximumFractionDigits:2});
+const pf = new Intl.NumberFormat('es-MX', {style:'percent', maximumFractionDigits:2});
+const num = v => { const n = typeof v === 'number' ? v : parseFloat(String(v ?? '').replace(/[^0-9.\-]/g, '')); return Number.isFinite(n) ? n : 0; };
+const str = v => (v == null ? '' : String(v)).trim();
+const isoOr = v => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(str(v)); return m ? m[0] : ''; };
+const keyOf = s => str(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+const clone = o => JSON.parse(JSON.stringify(o));
+const uid = () => 'x' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+/* ============ Catálogo de acuerdos ============ */
+const TIPOS = {
+  constitucion: 'Constitución',
+  aumento: 'Aumento de capital',
+  disminucion: 'Disminución de capital',
+  transmision: 'Transmisión de acciones',
+  administracion: 'Órgano de administración',
+  comisario: 'Comisario / vigilancia',
+  poder: 'Otorgamiento de poderes',
+  revocacion: 'Revocación de poderes',
+  reforma: 'Reforma de estatutos',
+  otro: 'Otro acuerdo'
+};
+const ROWDEF = {
+  tenencias: [['socio','Accionista','text','2fr'],['nacionalidad','Nacionalidad','text','110px'],['serie','Serie','text','70px'],['clase','Capital','clase','110px'],['acciones','Acciones','number','110px']],
+  transmisiones: [['de','Transmite','text','1.4fr'],['a','Adquiere','text','1.4fr'],['nacionalidad','Nacionalidad del adquirente','text','110px'],['serie','Serie','text','70px'],['clase','Capital','clase','110px'],['acciones','Acciones','number','100px']],
+  miembros: [['nombre','Nombre','text','2fr'],['cargo','Cargo','text','1fr']],
+  comisarios: [['nombre','Nombre','text','2fr'],['cargo','Carácter','text','1fr']],
+  poderes: [['apoderado','Apoderado','text','1.4fr'],['facultades','Facultades','text','1.6fr'],['notas','Limitaciones / vigencia','text','1.2fr']],
+  revocados: [['apoderado','Apoderado cuyo poder se revoca','text','1fr']]
+};
+const REGIMENES = ['S.A. de C.V.','S.A.P.I. de C.V.','S.A.','S. de R.L. de C.V.','S. de R.L.','S.A.S.','S.C.','A.C.'];
+const FORMAS = ['Administrador Único','Consejo de Administración','Gerente Único','Consejo de Gerentes'];
+const TIPOS_INSTR = ['Escritura pública','Póliza','Acta de asamblea','Otro'];
+const CLAUSULAS_EXT = ['','Admisión de extranjeros','Exclusión de extranjeros'];
+const normClausula = v => /exclu/i.test(str(v)) ? 'Exclusión de extranjeros' : /admi/i.test(str(v)) ? 'Admisión de extranjeros' : '';
+const esExtranjera = n => !!str(n) && !/mexican|^m[eé]xico$/i.test(str(n));
+const ACTOS = ['','Constitución de sociedad','Asamblea General Ordinaria de Accionistas','Asamblea General Extraordinaria de Accionistas','Asamblea General Ordinaria y Extraordinaria de Accionistas','Asamblea Especial de Accionistas','Asamblea de Socios','Resoluciones unánimes adoptadas fuera de asamblea','Sesión del Consejo de Administración','Otorgamiento o revocación de poderes','Otro'];
+const actoLabel = m => {
+  const I = m.instrumento || {};
+  if (!I.actoTipo || I.actoTipo === 'Otro') return '';
+  if (/^Constituci|^Otorgamiento/.test(I.actoTipo)) return I.actoTipo.toLowerCase();
+  const verbo = I.tipo === 'Acta de asamblea' ? 'acta de' : 'protocolización del acta de';
+  return `${verbo} ${I.actoTipo}${I.actoFecha ? ' celebrada el ' + fdate(I.actoFecha) : ''}`;
+};
+function antecedente(m, vn){
+  const I = m.instrumento || {};
+  const casa = I.numFedatario ? `${I.tipo === 'Póliza' ? 'Corredor Público' : 'Notario Público'} número ${I.numFedatario}` : '';
+  const ante = [I.fedatario ? 'ante ' + I.fedatario : '', casa, I.plaza ? 'de ' + I.plaza : ''].filter(Boolean).join(', ');
+  const cab = `${instrLabel(m)}${I.fecha ? ' de fecha ' + fdate(I.fecha) : ''}${ante ? ', otorgada ' + ante : ''}`;
+  const acto = actoLabel(m);
+  const acuerdos = (m.acuerdos || []).map(a => describe(a, vn));
+  const insc = I.tipo === 'Acta de asamblea' ? '' : inscrito(m) ? `Inscrita en el Registro Público de Comercio${m.inscripcion.folio ? ' bajo el folio ' + m.inscripcion.folio : ''}${m.inscripcion.fecha ? ' el ' + fdate(m.inscripcion.fecha) : ''}.` : 'Sin datos de inscripción capturados.';
+  return {cab, acto, acuerdos, insc};
+}
+
+const blankRow = k => Object.fromEntries(ROWDEF[k].map(([f,,t]) => [f, t === 'number' ? '' : t === 'clase' ? 'fijo' : '']));
+function blankAcuerdo(tipo){
+  const E = {tipo};
+  switch (tipo){
+    case 'constitucion': return {...E, denominacion:'', regimen:'S.A. de C.V.', domicilio:'', duracion:'', objeto:'', giros:'', valorNominal:'', extranjeros:'', tenencias:[blankRow('tenencias')], formaAdmin:'', miembros:[blankRow('miembros')], comisarios:[]};
+    case 'aumento': case 'disminucion': return {...E, tenencias:[blankRow('tenencias')], notas:''};
+    case 'transmision': return {...E, transmisiones:[blankRow('transmisiones')]};
+    case 'administracion': return {...E, formaAdmin:'', miembros:[blankRow('miembros')]};
+    case 'comisario': return {...E, comisarios:[blankRow('comisarios')]};
+    case 'poder': return {...E, poderes:[blankRow('poderes')]};
+    case 'revocacion': return {...E, revocados:[blankRow('revocados')]};
+    case 'reforma': return {...E, clausulas:'', denominacion:'', regimen:'', domicilio:'', duracion:'', objeto:'', giros:'', valorNominal:'', extranjeros:''};
+    default: return {...E, tipo:'otro', descripcion:''};
+  }
+}
+const blankDraft = () => ({instrumento:{tipo:'Escritura pública', numero:'', fecha:'', fedatario:'', numFedatario:'', plaza:'Guadalajara, Jalisco', adscripcion:'', actoTipo:'', actoFecha:'', rubro:'', contenido:''}, inscripcion:{fecha:'', folio:'', sede:'Guadalajara, Jalisco'}, resumen:'', acuerdos:[]});
+
+const instrLabel = m => {
+  const I = m.instrumento || {};
+  const ab = {'Escritura pública':'Escritura','Póliza':'Póliza','Acta de asamblea':'Acta de asamblea'}[I.tipo] || (I.tipo || 'Instrumento');
+  return `${ab}${I.numero ? ' ' + I.numero : ''}`;
+};
+const fedLabel = m => {
+  const I = m.instrumento || {};
+  const casa = I.numFedatario ? `${I.tipo === 'Póliza' ? 'Correduría' : 'Notaría'} ${I.numFedatario}` : '';
+  return [I.fedatario, casa, I.plaza].filter(Boolean).join(', ');
+};
+const fuente = m => `${instrLabel(m)} · ${fdate(m.instrumento?.fecha)}`;
+const inscrito = m => !!(m.inscripcion?.fecha || m.inscripcion?.folio);
+
+/* ============ Visual ============ */
+const IC = {
+  id: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="12" r="2"/><path d="M14 10h4M14 14h3"/></svg>',
+  folio: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>',
+  mov: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>',
+  cal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>',
+  pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  coins: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="9" cy="7" rx="6" ry="3"/><path d="M3 7v5c0 1.7 2.7 3 6 3s6-1.3 6-3V7"/><path d="M15 11.5c3.3 0 6 1.3 6 3v3c0 1.7-2.7 3-6 3-2 0-3.8-.5-4.9-1.2"/></svg>',
+  globe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>',
+  users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/></svg>'
+};
+const TCOLOR = {constitucion:'--c1', aumento:'--c3', disminucion:'--c3', transmision:'--c7', administracion:'--c4', comisario:'--c4', poder:'--c5', revocacion:'--c8', reforma:'--c2', otro:'--c0'};
+const TGRUPO = {constitucion:'Constitución', aumento:'Capital', disminucion:'Capital', transmision:'Transmisiones', administracion:'Administración', comisario:'Administración', poder:'Poderes', revocacion:'Poderes', reforma:'Reformas', otro:'Otros'};
+const iniciales = n => str(n).replace(/["“”]/g, '').split(/\s+/).filter(w => w.length > 2 || /^[A-ZÁÉÍÓÚÑ]/.test(w)).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
+const hashN = t => { let h = 0; for (const c of keyOf(t)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h % 8 + 1; };
+const avatar = n => `<span class="av" style="background:color-mix(in srgb, var(--c${hashN(n)}) 22%, var(--surface))">${esc(iniciales(n))}</span>`;
+const tipoPrincipal = m => { const t = (m.acuerdos || []).map(a => a.tipo); return t.includes('constitucion') ? 'constitucion' : t[0] || 'otro'; };
+function donut(rows, total){
+  const R = 70, C = 2 * Math.PI * R; let off = 0;
+  const segs = rows.map((r, i) => { const len = total ? r.total / total * C : 0; const gap = rows.length > 1 ? Math.min(3, len / 3) : 0; const el = `<circle class="seg" data-i="${i}" cx="100" cy="100" r="${R}" fill="none" stroke="var(${r.color})" stroke-width="26" stroke-dasharray="${Math.max(0, len - gap).toFixed(2)} ${(C - len + gap).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 100 100)"><title>${esc(r.socio)}: ${pf.format(total ? r.total / total : 0)}</title></circle>`; off += len; return el; }).join('');
+  return `<svg class="donut" id="donut" viewBox="0 0 200 200" role="img" aria-label="Participación en el capital">${segs}<text x="100" y="96" text-anchor="middle" font-size="22" font-weight="700">${rows.length}</text><text x="100" y="116" text-anchor="middle" font-size="11" style="fill:var(--muted)">${rows.length === 1 ? 'titular' : 'titulares'}</text></svg>`;
+}
+function historialSocio(nombre, movs){
+  const k = keyOf(nombre), out = [];
+  for (const m of sortMovs(movs)) for (const a of (m.acuerdos || [])){
+    const rows = [...(a.tenencias || []).filter(r => keyOf(r.socio) === k).map(r => `${a.tipo === 'disminucion' ? 'Disminuye' : a.tipo === 'constitucion' ? 'Suscribe' : 'Suscribe en aumento'} ${nf.format(Math.abs(num(r.acciones)))} (${r.clase})`),
+      ...(a.transmisiones || []).filter(r => keyOf(r.de) === k || keyOf(r.a) === k).map(r => keyOf(r.de) === k ? `Transmite ${nf.format(num(r.acciones))} a ${r.a}` : `Adquiere ${nf.format(num(r.acciones))} de ${r.de}`)];
+    rows.forEach(t => out.push(`<li><b>${fdate(m.instrumento?.fecha)}</b> · ${esc(instrLabel(m))}: ${esc(t)}</li>`));
+  }
+  return out.length ? `<ul style="margin:0;padding-left:18px">${out.join('')}</ul>` : '<span class="muted">Sin movimientos registrados para este titular.</span>';
+}
+
+/* ============ Redacción notarial (cifra y letra, folios deletreados) ============ */
+const U = ['cero','uno','dos','tres','cuatro','cinco','seis','siete','ocho','nueve','diez','once','doce','trece','catorce','quince','dieciséis','diecisiete','dieciocho','diecinueve','veinte','veintiuno','veintidós','veintitrés','veinticuatro','veinticinco','veintiséis','veintisiete','veintiocho','veintinueve'];
+const DEC = ['','','','treinta','cuarenta','cincuenta','sesenta','setenta','ochenta','noventa'];
+const CEN = ['','ciento','doscientos','trescientos','cuatrocientos','quinientos','seiscientos','setecientos','ochocientos','novecientos'];
+function menosMil(n, apoc){
+  if (n < 30){ const w = U[n]; return apoc && n === 1 ? 'un' : apoc && n === 21 ? 'veintiún' : w; }
+  if (n < 100){ const d = Math.floor(n / 10), u = n % 10; return DEC[d] + (u ? ' y ' + (apoc && u === 1 ? 'un' : U[u]) : ''); }
+  if (n === 100) return 'cien';
+  const c = Math.floor(n / 100), r = n % 100; return CEN[c] + (r ? ' ' + menosMil(r, apoc) : '');
+}
+function letras(n){
+  n = Math.floor(Math.abs(n)); if (n < 1000) return menosMil(n);
+  if (n < 1e6){ const k = Math.floor(n / 1000), r = n % 1000; return (k === 1 ? 'mil' : menosMil(k, true) + ' mil') + (r ? ' ' + menosMil(r) : ''); }
+  const m = Math.floor(n / 1e6), r = n % 1e6; return (m === 1 ? 'un millón' : letras(m).replace(/uno$/, 'un') + ' millones') + (r ? ' ' + letras(r) : '');
+}
+const cifraLetra = v => { const d = str(v).replace(/[^0-9]/g, ''); return d ? `${str(v)} ${letras(+d)}` : (str(v) || '*****'); };
+const fechaLetra = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); if (!m) return '*****'; const M = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']; return `${+m[3]} ${letras(+m[3])} de ${M[+m[2]-1]} de ${+m[1]} ${letras(+m[1])}`; };
+const deletrear = f => [...str(f)].map(c => /\d/.test(c) ? U[+c] : c === '-' ? 'guion' : /[A-Za-z]/.test(c) ? 'letra ' + c.toUpperCase() : '').filter(Boolean).join(', ');
+const REG_LARGO = {'S.A. DE C.V.':'SOCIEDAD ANÓNIMA DE CAPITAL VARIABLE','S.A.P.I. DE C.V.':'SOCIEDAD ANÓNIMA PROMOTORA DE INVERSIÓN DE CAPITAL VARIABLE','S.A.':'SOCIEDAD ANÓNIMA','S. DE R.L. DE C.V.':'SOCIEDAD DE RESPONSABILIDAD LIMITADA DE CAPITAL VARIABLE','S. DE R.L.':'SOCIEDAD DE RESPONSABILIDAD LIMITADA','S.A.S.':'SOCIEDAD POR ACCIONES SIMPLIFICADA','S.A.S. DE C.V.':'SOCIEDAD POR ACCIONES SIMPLIFICADA DE CAPITAL VARIABLE','S.C.':'SOCIEDAD CIVIL','A.C.':'ASOCIACIÓN CIVIL'};
+const MODALIDADES = [[/S\.?\s*O\.?\s*F\.?\s*O\.?\s*M\.?/g, 'SOCIEDAD FINANCIERA DE OBJETO MÚLTIPLE'], [/E\.?\s*N\.?\s*R\.?(?=$|[\s,])/g, 'ENTIDAD NO REGULADA'], [/E\.?\s*R\.?(?=$|[\s,])/g, 'ENTIDAD REGULADA']];
+const regLargo = r => {
+  const x = str(r).toUpperCase().replace(/\s+/g, ' ');
+  if (REG_LARGO[x]) return REG_LARGO[x];
+  const base = Object.keys(REG_LARGO).sort((a, b) => b.length - a.length).find(k => x.startsWith(k));
+  if (!base) return x;
+  let resto = x.slice(base.length).replace(/^[\s,]+/, '');
+  MODALIDADES.forEach(([re, t]) => { resto = resto.replace(re, t); });
+  return REG_LARGO[base] + (resto ? ', ' + resto : '');
+};
+const nombreSoc = S => `"${str(S.denominacion).toUpperCase().replace(/^"|"$/g, '')}", ${regLargo(S.regimen)}`;
+const lic = f => { const x = str(f); if (!x) return 'Licenciado *****'; if (/^lic(da|enciada)\.?\s/i.test(x)) return 'Licenciada ' + x.replace(/^\S+\s+/, ''); return 'Licenciado ' + x.replace(/^lic(\.|enciado)?\s+/i, ''); };
+const ROMANOS = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX','XXI','XXII','XXIII','XXIV','XXV'];
+function rubro(m){
+  const r = [];
+  for (const a of (m.acuerdos || [])){
+    if (a.tipo === 'constitucion') r.push('CONSTITUCIÓN DE LA SOCIEDAD');
+    else if (a.tipo === 'aumento' || a.tipo === 'disminucion'){ const cl = new Set((a.tenencias || []).filter(t => num(t.acciones)).map(t => t.clase)); r.push(`${a.tipo === 'aumento' ? 'AUMENTO' : 'DISMINUCIÓN'} DE CAPITAL${cl.size === 1 ? (cl.has('variable') ? ' VARIABLE' : ' FIJO') : ''}`); }
+    else if (a.tipo === 'transmision') r.push('TRANSMISIÓN DE ACCIONES');
+    else if (a.tipo === 'administracion') r.push('NOMBRAMIENTO DE ' + (str(a.formaAdmin) || 'ÓRGANO DE ADMINISTRACIÓN').toUpperCase());
+    else if (a.tipo === 'comisario') r.push('NOMBRAMIENTO DE COMISARIO');
+    else if (a.tipo === 'poder') r.push('OTORGAMIENTO DE PODERES');
+    else if (a.tipo === 'revocacion') r.push('REVOCACIÓN DE PODERES');
+    else if (a.tipo === 'reforma') r.push(/total/i.test(a.clausulas || '') ? 'REFORMA TOTAL DE ESTATUTOS' : str(a.denominacion) ? 'CAMBIO DE DENOMINACIÓN Y REFORMA DE ESTATUTOS' : 'REFORMA PARCIAL DE ESTATUTOS');
+    else r.push('OTROS ACUERDOS');
+  }
+  return [...new Set(r)].join(' Y ') || 'ACUERDOS CORPORATIVOS';
+}
+function contenidoNotarial(m, S){
+  const partes = [];
+  for (const a of (m.acuerdos || [])){
+    if (a.tipo === 'aumento' || a.tipo === 'disminucion'){ const cl = new Set((a.tenencias || []).filter(t => num(t.acciones)).map(t => t.clase)); partes.push(`el ${a.tipo === 'aumento' ? 'aumento' : 'la disminución'} del capital social${cl.size === 1 ? ' en su parte ' + [...cl][0] : ''}`.replace('el la', 'la')); }
+    else if (a.tipo === 'transmision') partes.push('una transmisión de acciones');
+    else if (a.tipo === 'administracion') partes.push(`el nombramiento de ${str(a.formaAdmin) ? (/consejo/i.test(a.formaAdmin) ? 'los miembros del ' : '') + a.formaAdmin : 'el órgano de administración'}`.replace('de el', 'del'));
+    else if (a.tipo === 'comisario') partes.push('el nombramiento de comisario');
+    else if (a.tipo === 'poder') partes.push('el otorgamiento de poderes');
+    else if (a.tipo === 'revocacion') partes.push('la revocación de poderes');
+    else if (a.tipo === 'reforma') partes.push(str(a.denominacion) ? `el cambio de denominación por "${str(a.denominacion).toUpperCase()}"` : `la reforma ${a.clausulas ? 'de las cláusulas ' + a.clausulas + ' ' : ''}de los estatutos sociales`);
+    else if (a.tipo === 'otro' && str(a.descripcion)) partes.push(str(a.descripcion).replace(/\.$/, ''));
+  }
+  if (!partes.length) return '';
+  return partes.length === 1 ? partes[0] : partes.slice(0, -1).join(', ') + ' y ' + partes.at(-1);
+}
+function registroNotarial(m, soc){
+  const I = m.instrumento || {}, R = m.inscripcion || {};
+  if (I.tipo === 'Acta de asamblea') return '';
+  const folio = str(R.folio) || (inscrito(m) ? str(soc.fme) : '');
+  const sede = str(R.sede) || 'Guadalajara, Jalisco';
+  if (!folio){
+    const reciente = I.fecha && (Date.now() - Date.parse(I.fecha)) < 365 * 864e5;
+    return reciente ? 'la cual se encuentra pendiente de registro debido a su reciente otorgamiento' : '[FALTA: datos de registro]';
+  }
+  if (/^[A-Z]?-?\d[\d\-*]*$/i.test(folio.replace(/\s/g, ''))) return `registrada bajo folio mercantil electrónico número ${folio} ${deletrear(folio)}, del Registro Público de Comercio con sede en ${sede.toUpperCase()}`;
+  return `registrada bajo ${folio}, del Registro Público de Comercio con sede en ${sede.toUpperCase()}`;
+}
+const registroDe = (soc, movs) => {
+  if (str(soc.registro)) return soc.registro;
+  const c = sortMovs(movs).find(m => (m.acuerdos || []).some(a => a.tipo === 'constitucion') && str(m.inscripcion?.sede)) || sortMovs(movs).find(m => str(m.inscripcion?.sede));
+  return 'Registro Público de Comercio de ' + (c ? c.inscripcion.sede : 'Guadalajara, Jalisco');
+};
+const esSuscrito = I => str(I.numFedatario) === '26' && /guadalajara/i.test(I.plaza || '') && I.tipo !== 'Póliza';
+function antecedenteNotarial(m, soci, soc, i){
+  const I = m.instrumento || {};
+  const esPoliza = I.tipo === 'Póliza';
+  const doc = esPoliza ? 'Póliza' : I.tipo === 'Acta de asamblea' ? 'Acta' : 'Escritura Pública';
+  const ads = str(I.adscripcion) || (esPoliza ? 'la Plaza del Estado de ' + (str(I.plaza).split(',').pop().trim() || 'Jalisco') : (I.plaza || '*****'));
+  const ante = esSuscrito(I) ? 'ante la fe del suscrito notario' : `ante la fe del ${lic(I.fedatario)}, ${esPoliza ? 'Corredor Público' : 'Notario Público'} número ${cifraLetra(I.numFedatario)} de ${ads}`;
+  const esConst = (m.acuerdos || []).some(a => a.tipo === 'constitucion');
+  const cont = str(I.contenido) || contenidoNotarial(m) || '*****';
+  const que = esConst ? `en la cual se formalizó la Constitución de la sociedad denominada ${soci}` : `en la cual, entre otros acuerdos, se aprobó ${cont.replace(/\.$/, '')} de la sociedad denominada ${soci}`;
+  const reg = registroNotarial(m, soc);
+  return `--- ${ROMANOS[i] || i + 1}.- ${(str(I.rubro) || rubro(m)).toUpperCase()}.- Mediante ${doc} número ${cifraLetra(I.numero)}, otorgada en ${I.plaza || '*****'}, de fecha ${fechaLetra(I.fecha)}, ${ante}, ${que}${reg ? ', ' + reg : ''}.`;
+}
+// Denominación vigente al momento de cada instrumento
+function nombresHistoricos(movs, S){
+  let den = '', reg = '';
+  return sortMovs(movs).map(m => {
+    const c = (m.acuerdos || []).find(a => a.tipo === 'constitucion');
+    if (c){ den = str(c.denominacion) || den; reg = str(c.regimen) || reg; }
+    const nombre = `"${(den || S.denominacion).toUpperCase()}", ${regLargo(reg || S.regimen)}`;
+    (m.acuerdos || []).filter(a => a.tipo === 'reforma').forEach(a => { if (str(a.denominacion)) den = str(a.denominacion); if (str(a.regimen)) reg = str(a.regimen); });
+    return nombre;
+  });
+}
+const histPorId = (movs, S) => { const h = nombresHistoricos(movs, S); const map = new Map(); sortMovs(movs).forEach((m, i) => map.set(m.id, h[i])); return map; };
+
+/* ============ Motor: situación vigente a partir de los movimientos ============ */
+function sortMovs(movs){
+  return [...movs].sort((a, b) => (a.instrumento?.fecha || '9999').localeCompare(b.instrumento?.fecha || '9999') || (a.creado || 0) - (b.creado || 0));
+}
+function compute(soc, movs){
+  const S = {
+    denominacion: soc?.denominacion || '', regimen: soc?.regimen || '', domicilio: soc?.domicilio || '', duracion:'', objeto:'', giros:'',
+    valorNominal: 0, hold: new Map(), admin: null, comisarios: null, poderes: new Map(),
+    constitucion: null, ultimaReforma: null, alertas: [], sinInscripcion: [], extranjeros: null, nac: new Map(), ie: null
+  };
+  const setNac = (socio, n) => { if (str(socio) && str(n)) S.nac.set(keyOf(socio), str(n)); };
+  const add = (socio, serie, clase, n, m) => {
+    const k = `${keyOf(socio)}|${keyOf(serie)}|${clase}`;
+    const cur = S.hold.get(k) || {socio: str(socio), serie: str(serie), clase, acciones: 0};
+    cur.acciones += n;
+    if (cur.acciones < 0){ S.alertas.push({nivel:'bad', txt:`${cur.socio || 'Accionista sin nombre'} queda con saldo negativo (${nf.format(cur.acciones)} acciones serie ${cur.serie || '—'}) después de ${fuente(m)}. Revisa la captura.`}); }
+    S.hold.set(k, cur);
+  };
+  for (const m of sortMovs(movs)){
+    if (!inscrito(m) && m.instrumento?.tipo !== 'Acta de asamblea') S.sinInscripcion.push(m);
+    for (const a of (m.acuerdos || [])){
+      switch (a.tipo){
+        case 'constitucion':
+          ['denominacion','regimen','domicilio','duracion','objeto','giros'].forEach(k => { if (str(a[k])) S[k] = str(a[k]); });
+          if (num(a.valorNominal)) S.valorNominal = num(a.valorNominal);
+          S.hold = new Map();
+          if (normClausula(a.extranjeros)) S.extranjeros = {clausula: normClausula(a.extranjeros), m};
+          (a.tenencias || []).forEach(r => { setNac(r.socio, r.nacionalidad); num(r.acciones) && add(r.socio, r.serie, r.clase, num(r.acciones), m); });
+          if (str(a.formaAdmin) || (a.miembros || []).some(r => str(r.nombre))) S.admin = {forma: str(a.formaAdmin), miembros: (a.miembros || []).filter(r => str(r.nombre)), m};
+          if ((a.comisarios || []).some(r => str(r.nombre))) S.comisarios = {lista: a.comisarios.filter(r => str(r.nombre)), m};
+          S.constitucion = m;
+          break;
+        case 'aumento':
+          (a.tenencias || []).forEach(r => setNac(r.socio, r.nacionalidad));
+          (a.tenencias || []).forEach(r => num(r.acciones) && add(r.socio, r.serie, r.clase, Math.abs(num(r.acciones)), m));
+          break;
+        case 'disminucion':
+          (a.tenencias || []).forEach(r => num(r.acciones) && add(r.socio, r.serie, r.clase, -Math.abs(num(r.acciones)), m));
+          break;
+        case 'transmision':
+          (a.transmisiones || []).forEach(r => { setNac(r.a, r.nacionalidad); const n = Math.abs(num(r.acciones)); if (!n) return; add(r.de, r.serie, r.clase, -n, m); add(r.a, r.serie, r.clase, n, m); });
+          break;
+        case 'administracion':
+          S.admin = {forma: str(a.formaAdmin), miembros: (a.miembros || []).filter(r => str(r.nombre)), m};
+          break;
+        case 'comisario':
+          S.comisarios = {lista: (a.comisarios || []).filter(r => str(r.nombre)), m};
+          break;
+        case 'poder':
+          (a.poderes || []).forEach(r => { if (str(r.apoderado)) S.poderes.set(keyOf(r.apoderado) + '|' + keyOf(r.facultades), {...r, m}); });
+          break;
+        case 'revocacion':
+          (a.revocados || []).forEach(r => {
+            const k = keyOf(r.apoderado); if (!k) return;
+            let hit = false;
+            for (const pk of [...S.poderes.keys()]) if (pk.startsWith(k + '|')){ S.poderes.delete(pk); hit = true; }
+            if (!hit) S.alertas.push({nivel:'warn', txt:`Se revoca el poder de ${str(r.apoderado)} en ${fuente(m)}, pero no hay un otorgamiento previo capturado.`});
+          });
+          break;
+        case 'reforma':
+          ['denominacion','regimen','domicilio','duracion','objeto','giros'].forEach(k => { if (str(a[k])) S[k] = str(a[k]); });
+          if (num(a.valorNominal)) S.valorNominal = num(a.valorNominal);
+          if (normClausula(a.extranjeros)) S.extranjeros = {clausula: normClausula(a.extranjeros), m};
+          S.ultimaReforma = {m, clausulas: str(a.clausulas)};
+          break;
+      }
+    }
+  }
+  for (const [k, v] of S.hold) if (!v.acciones) S.hold.delete(k);
+  const CA = soc?.cuadroActa;
+  if (CA && (CA.tenencias || []).length){
+    const pm = {instrumento: {tipo: 'Acta de asamblea', numero: '', fecha: CA.fecha || ''}, acuerdos: []};
+    const capturado = [...S.hold.values()].reduce((x, h) => x + h.acciones, 0);
+    const delActa = CA.tenencias.reduce((x, r) => x + num(r.acciones), 0);
+    const firma = arr => arr.map(h => keyOf(h.socio) + ':' + num(h.acciones)).sort().join('|');
+    const difiere = firma([...S.hold.values()].map(h => ({socio: h.socio, acciones: h.acciones}))) !== firma(CA.tenencias.map(r => ({socio: r.socio, acciones: r.acciones})));
+    const ultCap = sortMovs(movs).filter(m => (m.acuerdos || []).some(x => ['constitucion','aumento','disminucion','transmision'].includes(x.tipo))).pop();
+    const actaMasReciente = !ultCap || (CA.fecha && CA.fecha >= (ultCap.instrumento?.fecha || ''));
+    if (capturado && actaMasReciente && difiere) S.alertas.push({nivel:'warn', txt:`El cuadro que resulta de los instrumentos capturados no coincide con ${CA.fuente || 'la última lista de asistencia'}${capturado !== delActa ? ` (${nf.format(capturado)} contra ${nf.format(delActa)} acciones)` : ' (mismo capital, distintos titulares o tenencias)'}. Se muestra el de la lista de asistencia; faltan instrumentos por capturar.`});
+    if (!capturado || (actaMasReciente && difiere)){
+      S.hold = new Map(); CA.tenencias.forEach(r => { const k = `${keyOf(r.socio)}|${keyOf(r.serie)}|${r.clase}`; S.hold.set(k, {socio: str(r.socio), serie: str(r.serie), clase: r.clase === 'variable' ? 'variable' : 'fijo', acciones: num(r.acciones)}); });
+      if (num(CA.valorNominal) && !S.valorNominal) S.valorNominal = num(CA.valorNominal);
+      S.cuadroFuente = CA.fuente || 'Lista de asistencia del acta';
+    } else if (!actaMasReciente && difiere) S.alertas.push({nivel:'warn', txt:`El cuadro calculado (${nf.format(capturado)}) no coincide con el de ${CA.fuente || 'la última acta'} (${nf.format(delActa)}). Falta capturar algún movimiento.`});
+    if (CA.admin && (CA.admin.miembros || []).length && !(S.admin?.miembros || []).length) S.admin = {forma: str(CA.admin.forma) || S.admin?.forma || '', miembros: CA.admin.miembros, m: pm};
+  }
+  // Inversión extranjera: titulares vigentes cuya nacionalidad capturada no es mexicana
+  (CA?.tenencias || []).forEach(r => setNac(r.socio, r.nacionalidad));
+  const tot = [...S.hold.values()].reduce((x, h) => x + h.acciones, 0);
+  const ext = new Map();
+  for (const h of S.hold.values()){ const nac = S.nac.get(keyOf(h.socio)); if (!esExtranjera(nac)) continue; const r = ext.get(keyOf(h.socio)) || {socio: h.socio, nacionalidad: nac, acciones: 0}; r.acciones += h.acciones; ext.set(keyOf(h.socio), r); }
+  if (ext.size){
+    const acc = [...ext.values()].reduce((x, r) => x + r.acciones, 0);
+    S.ie = {rows: [...ext.values()].sort((a, b) => b.acciones - a.acciones), acciones: acc, pct: tot ? acc / tot : 0};
+    const quien = S.ie.rows.map(r => `${r.socio} (${r.nacionalidad})`).join(', ');
+    if (S.extranjeros?.clausula === 'Exclusión de extranjeros') S.alertas.push({nivel:'bad', txt:`Los estatutos tienen cláusula de exclusión de extranjeros (${fuente(S.extranjeros.m)}), pero hay titulares extranjeros: ${quien}. Revisa la captura o los estatutos.`});
+    else if (!S.extranjeros) S.alertas.push({nivel:'warn', txt:`Hay titulares extranjeros (${quien}) y no está capturada la cláusula de admisión o exclusión de extranjeros.`});
+  }
+  if (movs.length && !S.constitucion) S.alertas.push({nivel:'warn', txt:'No hay escritura constitutiva capturada. El cuadro accionario parte de cero y puede no reflejar la composición real.'});
+  return S;
+}
+function cuadro(S){
+  const by = new Map();
+  for (const h of S.hold.values()){
+    const k = keyOf(h.socio);
+    const r = by.get(k) || {socio: h.socio, series: new Set(), fijo: 0, variable: 0};
+    if (h.serie) r.series.add(h.serie);
+    r[h.clase === 'variable' ? 'variable' : 'fijo'] += h.acciones;
+    by.set(k, r);
+  }
+  const rows = [...by.values()].map(r => ({...r, serie: [...r.series].sort().join(', '), total: r.fijo + r.variable}));
+  const tot = rows.reduce((s, r) => ({fijo: s.fijo + r.fijo, variable: s.variable + r.variable, total: s.total + r.total}), {fijo:0, variable:0, total:0});
+  rows.sort((a, b) => b.total - a.total || a.socio.localeCompare(b.socio));
+  return {rows, tot};
+}
+function describe(a, vn){
+  const acc = n => `${nf.format(n)} acc.`;
+  const tl = r => `${acc(Math.abs(num(r.acciones)))}${r.serie ? ' serie ' + r.serie : ''} (${r.clase === 'variable' ? 'variable' : 'fijo'})`;
+  const names = (rows, f = 'nombre') => (rows || []).filter(r => str(r[f])).map(r => r[f] + (r.cargo ? ` (${r.cargo})` : '')).join('; ');
+  switch (a.tipo){
+    case 'constitucion': {
+      const t = (a.tenencias || []).reduce((s, r) => s + num(r.acciones), 0);
+      const v = num(a.valorNominal);
+      return `Constitución de ${a.denominacion || 'la sociedad'}${a.regimen ? ', ' + a.regimen.replace(/\.$/, '') : ''}. Capital inicial: ${acc(t)}${v ? ' (' + mf.format(t * v) + ')' : ''}.${normClausula(a.extranjeros) ? ' ' + normClausula(a.extranjeros) + '.' : ''}${a.formaAdmin ? ' Administración: ' + a.formaAdmin + (names(a.miembros) ? ', ' + names(a.miembros) : '') + '.' : ''}`;
+    }
+    case 'aumento': return `Aumento de capital: ${(a.tenencias || []).filter(r => num(r.acciones)).map(r => `${tl(r)} suscritas por ${r.socio || '—'}`).join('; ') || 'sin detalle'}.${a.notas ? ' ' + a.notas : ''}`;
+    case 'disminucion': return `Disminución de capital: ${(a.tenencias || []).filter(r => num(r.acciones)).map(r => `${tl(r)} de ${r.socio || '—'}`).join('; ') || 'sin detalle'}.${a.notas ? ' ' + a.notas : ''}`;
+    case 'transmision': return `Transmisión: ${(a.transmisiones || []).filter(r => num(r.acciones)).map(r => `${r.de || '—'} a ${r.a || '—'}, ${tl(r)}`).join('; ') || 'sin detalle'}.`;
+    case 'administracion': return `Nombramiento de ${a.formaAdmin || 'órgano de administración'}${names(a.miembros) ? ': ' + names(a.miembros) : ''}.`;
+    case 'comisario': return `Vigilancia: ${names(a.comisarios) || 'sin detalle'}.`;
+    case 'poder': return `Poderes a ${(a.poderes || []).filter(r => str(r.apoderado)).map(r => r.apoderado + (r.facultades ? ` (${r.facultades})` : '')).join('; ') || '—'}.`;
+    case 'revocacion': return `Revocación de poderes de ${names(a.revocados, 'apoderado') || '—'}.`;
+    case 'reforma': {
+      const cambios = [['denominacion','denominación'],['regimen','régimen'],['domicilio','domicilio'],['duracion','duración'],['objeto','objeto'],['valorNominal','valor nominal'],['extranjeros','cláusula de extranjeros']].filter(([k]) => str(a[k])).map(([k, l]) => `${l}: ${k === 'valorNominal' ? mf.format(num(a[k])) : a[k]}`);
+      return `Reforma de estatutos${a.clausulas ? ' (cláusulas ' + a.clausulas + ')' : ''}${cambios.length ? '. ' + cambios.join('; ') : ''}.`;
+    }
+    default: return a.descripcion || 'Otro acuerdo.';
+  }
+}
+
+/* ============ Almacenamiento (db compartida o memoria local de respaldo) ============ */
+let db = null, user = null, canWrite = true;
+const store = {
+  mode: 'mem', mem: {soc: new Map(), movs: new Map()}, subs: {soc: null, movs: null},
+  newId(){ return db ? db.collection('sociedades').doc().id : uid(); },
+  listenSoc(cb){
+    if (db){
+      const t = setTimeout(() => setConn('warn', 'Sin respuesta de la base de datos'), 10000);
+      return db.collection('sociedades').onSnapshot(s => { clearTimeout(t); if (!s.metadata.fromCache) setConn('ok', 'Guardado en la nube'); cb(s.docs.map(d => ({id: d.id, ...d.data()}))); }, e => { clearTimeout(t); setConn('warn', 'No se pudo leer la base de datos'); console.warn(e); cb([]); });
+    }
+    this.subs.soc = cb; cb([...this.mem.soc.values()]); return () => {};
+  },
+  listenMovs(sid, cb){
+    if (db){
+      return db.collection(`sociedades/${sid}/movimientos`).onSnapshot(s => cb(s.docs.map(d => ({id: d.id, ...d.data()}))), e => { console.warn(e); cb([]); });
+    }
+    this.subs.movs = {sid, cb}; cb([...(this.mem.movs.get(sid) || new Map()).values()]); return () => { this.subs.movs = null; };
+  },
+  async saveSoc(id, data){
+    if (db) return db.doc(`sociedades/${id}`).set(data);
+    this.mem.soc.set(id, {id, ...data}); this.subs.soc?.([...this.mem.soc.values()]);
+  },
+  async saveMov(sid, id, data){
+    if (db) return db.doc(`sociedades/${sid}/movimientos/${id}`).set(data);
+    if (!this.mem.movs.has(sid)) this.mem.movs.set(sid, new Map());
+    this.mem.movs.get(sid).set(id, {id, ...data}); this.emitMovs(sid);
+  },
+  async delMov(sid, id){
+    if (db) return db.doc(`sociedades/${sid}/movimientos/${id}`).delete();
+    this.mem.movs.get(sid)?.delete(id); this.emitMovs(sid);
+  },
+  async delSoc(id, movIds){
+    if (db){ for (const m of movIds) await db.doc(`sociedades/${id}/movimientos/${m}`).delete(); return db.doc(`sociedades/${id}`).delete(); }
+    this.mem.movs.delete(id); this.mem.soc.delete(id); this.subs.soc?.([...this.mem.soc.values()]);
+  },
+  emitMovs(sid){ if (this.subs.movs?.sid === sid) this.subs.movs.cb([...this.mem.movs.get(sid).values()]); }
+};
+function setConn(kind, txt){ $('#conn').innerHTML = `<i class="dot ${kind}"></i><span>${esc(txt)}</span>`; }
+
+/* ============ Estado de la vista ============ */
+const V = {capVista: 'importe', tlFiltro: 'Todos', tlOpen: new Set(), socioOpen: null, socs: [], loaded: false, sid: null, movs: [], tab: 'actual', q: '', unsubMovs: null, ia: {busy: false, ctl: null}};
+const curSoc = () => V.socs.find(s => s.id === V.sid) || null;
+
+function selectSoc(id){
+  if (V.sid === id) return;
+  V.sid = id; V.movs = []; V.tab = 'actual'; V.movsLoading = !!id; V.socioOpen = null; V.tlOpen = new Set(); V.tlFiltro = 'Todos';
+  V.unsubMovs?.(); V.unsubMovs = id ? store.listenMovs(id, list => { V.movs = list; V.movsLoading = false; renderMain(); }) : null;
+  try { localStorage.setItem('expcorp-sid', id || ''); } catch {}
+  renderList(); renderMain();
+}
+
+/* ============ Render: índice ============ */
+function renderList(){
+  const q = keyOf(V.q);
+  const list = [...V.socs].sort((a, b) => (a.denominacion || '').localeCompare(b.denominacion || '', 'es'))
+    .filter(s => !q || keyOf(`${s.denominacion} ${s.regimen} ${s.fme} ${s.rfc || ''}`).includes(q));
+  $('#socList').innerHTML = list.length ? list.map(s => `<li><button class="soc-item" type="button" data-sid="${esc(s.id)}" aria-current="${s.id === V.sid}"><b>${esc(s.denominacion || 'Sin denominación')}${s.regimen ? ', ' + esc(s.regimen) : ''}</b><small>${[s.rfc ? 'RFC <span class="mono">' + esc(s.rfc) + '</span>' : '', s.fme ? 'FME <span class="mono">' + esc(s.fme) + '</span>' : ''].filter(Boolean).join(' · ') || 'Sin RFC ni folio'}</small></button></li>`).join('')
+    : `<li class="muted" style="padding:8px 4px;font-size:13px">${V.loaded ? (V.socs.length ? 'Sin coincidencias.' : 'Aún no hay sociedades.') : 'Cargando…'}</li>`;
+}
+
+/* ============ Render: expediente ============ */
+function renderMain(){
+  const soc = curSoc();
+  const M = $('#main');
+  if (!soc){
+    M.innerHTML = `<div class="empty"><h2>${V.socs.length ? 'Elige una sociedad' : 'Abre el primer expediente'}</h2>
+      <p>Registra la constitutiva y cada instrumento posterior (aumentos, transmisiones, nombramientos, poderes, reformas). El expediente calcula solo el cuadro accionario y el órgano de administración vigentes.</p>
+      ${canWrite ? '<button class="btn primary" type="button" data-act="nueva">+ Nueva sociedad</button>' : ''}</div>`;
+    return;
+  }
+  if (V.movsLoading){ M.innerHTML = `<div class="empty"><h2>${esc(soc.denominacion || 'Expediente')}</h2><p>Cargando instrumentos…</p></div>`; return; }
+  const S = compute(soc, V.movs);
+  const C = cuadro(S);
+  const vn = S.valorNominal;
+  const esRL = /R\.?\s*L\./i.test(S.regimen);
+  const unidad = esRL ? 'partes sociales' : 'acciones';
+  const tabs = [['actual','Ficha de la sociedad'],['movs',`Instrumentos (${V.movs.length})`],['personalidad','Legal existencia y personalidad'],['resumen','Resumen ejecutivo']];
+
+  let body = '';
+  if (V.tab === 'actual'){
+    const alerts = S.alertas.map(a => `<div class="alert ${a.nivel}">${esc(a.txt)}</div>`).join('');
+    const top = C.rows.slice(0, 7), resto = C.rows.slice(7);
+    const filas = [...top.map((r, i) => ({...r, color: '--c' + (i + 1)})), ...(resto.length ? [{socio: `Otros (${resto.length})`, serie: '', fijo: resto.reduce((x, r) => x + r.fijo, 0), variable: resto.reduce((x, r) => x + r.variable, 0), total: resto.reduce((x, r) => x + r.total, 0), color: '--c0', otros: true}] : [])];
+    const U = vn ? V.capVista : (V.capVista === 'importe' ? 'acciones' : V.capVista);
+    const fu = n => U === 'importe' ? mf.format(n * vn) : U === 'porcentaje' ? pf.format(C.tot.total ? n / C.tot.total : 0) : nf.format(n);
+    const seg = `<div class="tl-filters" role="group" aria-label="Ver cuadro en" style="margin:0 0 10px">${[['acciones', esRL ? 'Partes sociales' : 'Acciones'], ['importe', 'Pesos'], ['porcentaje', 'Porcentaje']].map(([k, l]) => `<button class="fchip" type="button" data-capv="${k}" aria-pressed="${U === k}" ${k === 'importe' && !vn ? 'disabled title="Falta el valor nominal"' : ''}>${l}</button>`).join('')}</div>`;
+    const tabla = C.rows.length ? `${seg}<div class="tbl-wrap"><table><thead><tr><th>${esRL ? 'Socio' : 'Accionista'}</th><th>Serie(s)</th><th class="num">Fijo</th><th class="num">Variable</th><th class="num">Total</th>${U !== 'porcentaje' ? '<th class="num">%</th>' : ''}</tr></thead><tbody>${filas.map((r, i) => {
+        const p = C.tot.total ? r.total / C.tot.total : 0;
+        const open = !r.otros && V.socioOpen === keyOf(r.socio);
+        return `<tr class="sh ${open ? 'on' : ''}" data-sh="${i}" data-socio="${esc(r.otros ? '' : r.socio)}" title="Ver historial"><td><span class="dot" style="background:var(${r.color})"></span>${esc(r.socio || '—')}${!r.otros && esExtranjera(S.nac.get(keyOf(r.socio))) ? `<span class="nac">${esc(S.nac.get(keyOf(r.socio)))}</span>` : ''}</td><td>${esc(r.serie || '—')}</td><td class="num">${r.fijo ? fu(r.fijo) : '—'}</td><td class="num">${r.variable ? fu(r.variable) : '—'}</td><td class="num"><b>${fu(r.total)}</b></td>${U !== 'porcentaje' ? `<td class="num"><b>${pf.format(p)}</b></td>` : ''}</tr>${open ? `<tr class="shist"><td colspan="${U !== 'porcentaje' ? 6 : 5}">${historialSocio(r.socio, V.movs)}</td></tr>` : ''}`;
+      }).join('')}<tr class="total"><td colspan="2">Total</td><td class="num">${fu(C.tot.fijo)}</td><td class="num">${fu(C.tot.variable)}</td><td class="num">${fu(C.tot.total)}</td>${U !== 'porcentaje' ? '<td class="num">100%</td>' : ''}</tr></tbody></table></div><p class="kpi-note" style="margin:8px 0 0">Haz clic en un ${esRL ? 'socio' : 'accionista'} para ver su historial.${!vn ? ' Captura el valor nominal para verlo en pesos.' : ''}</p>`
+      : `<p class="muted">Sin ${unidad} registradas. Captura la constitutiva o un aumento de capital.</p>`;
+    const lastCap = sortMovs(V.movs).filter(m => (m.acuerdos || []).some(a => ['constitucion','aumento','disminucion','transmision'].includes(a.tipo))).pop();
+    const people = (rows, fallback) => rows.length ? `<ul class="people v2">${rows.map(r => `<li>${avatar(r.nombre)}<span class="who"><b>${esc(r.nombre)}</b><small>${esc(r.cargo || fallback || '')}</small></span></li>`).join('')}</ul>` : '';
+    const admin = S.admin ? `<div class="pills" style="margin:0 0 10px"><span class="pill" style="background:color-mix(in srgb, var(--c4) 20%, var(--surface))">${esc(S.admin.forma || 'Órgano de administración')}</span></div>${people(S.admin.miembros, S.admin.forma) || '<p class="muted" style="margin:0">Integrantes no capturados.</p>'}` : '<p class="muted">Sin nombramiento capturado.</p>';
+    const com = S.comisarios ? people(S.comisarios.lista, 'Comisario') : '<p class="muted" style="margin:0">Sin comisario capturado.</p>';
+    const pod = [...S.poderes.values()];
+    const poderes = pod.length ? `<ul class="people v2">${pod.map(p => `<li>${avatar(p.apoderado)}<span class="who"><b>${esc(p.apoderado)}</b><small>${esc(p.facultades || 'Facultades no capturadas')}${p.notas ? ' · ' + esc(p.notas) : ''}</small><small>${esc(fuente(p.m))}</small></span></li>`).join('')}</ul>` : '<p class="muted">Sin poderes vigentes capturados.</p>';
+    // Línea de tiempo
+    const grupos = ['Todos', ...new Set(V.movs.flatMap(m => (m.acuerdos || []).map(a => TGRUPO[a.tipo] || 'Otros')))];
+    const tlist = sortMovs(V.movs).filter(m => V.tlFiltro === 'Todos' || (m.acuerdos || []).some(a => (TGRUPO[a.tipo] || 'Otros') === V.tlFiltro));
+    const timeline = V.movs.length ? `<div class="tl-filters" role="group" aria-label="Filtrar por tipo">${grupos.map(g => { const t = Object.keys(TGRUPO).find(k => TGRUPO[k] === g); return `<button class="fchip" type="button" data-tl="${esc(g)}" aria-pressed="${V.tlFiltro === g}">${g !== 'Todos' ? `<span class="dot" style="margin:0;background:var(${TCOLOR[t] || '--c0'})"></span>` : ''}${esc(g)}</button>`; }).join('')}</div>
+      <ol class="tl">${tlist.map(m => { const t = tipoPrincipal(m), open = V.tlOpen.has(m.id), I = m.instrumento || {}; return `<li><span class="yr">${esc((I.fecha || '').slice(0, 4) || '—')}<br><span style="font-size:11px">${esc(fdate(I.fecha).replace(/ \d{4}$/, ''))}</span></span><span class="node" style="background:var(${TCOLOR[t] || '--c0'})"></span><button class="body" type="button" data-tlopen="${esc(m.id)}" aria-expanded="${open}"><h4>${esc((str(I.rubro) || rubro(m)).toLowerCase().replace(/^./, c => c.toUpperCase()))}</h4><div class="meta">${esc(instrLabel(m))} · ${esc(fedLabel(m) || 'Fedatario no capturado')}</div><div class="chips">${(m.acuerdos || []).map(a => `<span class="chip" style="background:color-mix(in srgb, var(${TCOLOR[a.tipo] || '--c0'}) 18%, var(--surface))">${esc(TIPOS[a.tipo] || 'Acuerdo')}</span>`).join('')}${I.tipo === 'Acta de asamblea' ? '' : inscrito(m) ? '<span class="chip ok">Inscrito</span>' : '<span class="chip warn">Sin inscripción</span>'}</div>${open ? `<div class="det">${actoLabel(m) ? `<div>${esc(actoLabel(m).replace(/^./, c => c.toUpperCase()))}.</div>` : ''}<ul>${(m.acuerdos || []).map(a => `<li>${esc(describe(a, vn))}</li>`).join('')}</ul>${inscrito(m) ? `<div class="muted" style="margin-top:4px">Folio ${esc(m.inscripcion.folio || soc.fme || '')}${m.inscripcion.fecha ? ' · inscrito el ' + esc(fdate(m.inscripcion.fecha)) : ''}</div>` : ''}</div>` : ''}</button></li>`; }).join('')}</ol>` : '<p class="muted">Sin instrumentos capturados.</p>';
+    const F = soc.fiscal || null;
+    const fiscal = F ? `<section class="card wide"><h3>Datos fiscales</h3><div class="src">Constancia de situación fiscal${F.fechaEmision ? ' emitida el ' + esc(fdate(F.fechaEmision)) : ''}${F.fechaEmision && (Date.now() - Date.parse(F.fechaEmision)) > 90 * 864e5 ? ' · <b>tiene más de 3 meses</b>' : ''}</div>
+        <div class="fgrid" style="gap:14px 20px">
+          <div><div class="eyebrow">RFC</div><div class="mono" style="font-weight:600">${esc(F.rfc || soc.rfc || '—')}</div></div>
+          <div><div class="eyebrow">Estatus en el padrón</div><div>${F.estatus ? `<span class="pill ${/activo/i.test(F.estatus) ? 'ok' : 'warn'}">${esc(F.estatus)}</span>` : '—'}</div></div>
+          <div><div class="eyebrow">Inicio de operaciones</div><div>${esc(fdate(F.fechaInicio))}</div></div>
+          <div><div class="eyebrow">Régimen fiscal</div><div>${esc((F.regimenes || []).join('; ') || '—')}</div></div>
+          <div style="grid-column:1/-1"><div class="eyebrow">Domicilio fiscal</div><div>${esc(F.domicilioFiscal || '—')}</div></div>
+          ${(F.actividades || []).length ? `<div style="grid-column:1/-1"><div class="eyebrow">Actividades económicas (SAT)</div><ul class="people" style="margin-top:4px">${F.actividades.map(a => `<li><span>${esc(a.actividad)}</span><span class="role">${a.porcentaje ? esc(a.porcentaje) + '%' : ''}</span></li>`).join('')}</ul></div>` : ''}
+        </div></section>` : '';
+    const X = S.extranjeros, IE = S.ie;
+    const ieCard = IE ? `<section class="card wide ie"><h3>Inversión extranjera</h3><div class="src">${X ? esc(X.clausula) + ' según ' + esc(fuente(X.m)) : 'Cláusula de extranjeros no capturada'}</div>
+        <div class="captable" style="grid-template-columns:180px minmax(0,1fr)"><div><div class="ie-big">${pf.format(IE.pct)}</div><div class="muted" style="font-size:12.5px">del capital social en manos de ${IE.rows.length === 1 ? 'un titular extranjero' : IE.rows.length + ' titulares extranjeros'}</div></div>
+        <ul class="people v2">${IE.rows.map(r => `<li>${avatar(r.socio)}<span class="who"><b>${esc(r.socio)}<span class="nac">${esc(r.nacionalidad)}</span></b><small>${nf.format(r.acciones)} ${unidad}${vn ? ' · ' + mf.format(r.acciones * vn) : ''} · ${pf.format(C.tot.total ? r.acciones / C.tot.total : 0)}</small></span></li>`).join('')}</ul></div>
+        <p class="kpi-note" style="margin:10px 0 0">Registro Nacional de Inversiones Extranjeras: ${soc.rnie ? '<b>' + esc(soc.rnie) + '</b>' : 'sin datos de inscripción capturados. Verifica la inscripción de la sociedad.'}</p></section>` : '';
+    body = `${alerts ? `<div class="alerts">${alerts}</div>` : ''}
+    <div class="grid2">
+      ${ieCard}
+      ${fiscal}
+      <section class="card wide"><h3>Cuadro accionario vigente</h3><div class="src">${S.cuadroFuente ? 'Según ' + esc(S.cuadroFuente) + ' (sin movimientos de capital capturados)' : lastCap ? 'Último movimiento de capital: ' + esc(fuente(lastCap)) : 'Sin movimientos de capital capturados'}</div>
+        ${C.rows.length ? `<div class="captable">${donut(filas, C.tot.total)}<div style="min-width:0">${tabla}</div></div>` : tabla}</section>
+      <section class="card"><h3>Órgano de administración</h3><div class="src">${S.admin ? 'Vigente según ' + esc(fuente(S.admin.m)) : '&nbsp;'}</div>${admin}
+        <h3 style="margin-top:18px;font-size:15px">Comisario</h3><div class="src">${S.comisarios ? 'Según ' + esc(fuente(S.comisarios.m)) : '&nbsp;'}</div>${com}</section>
+      <section class="card"><h3>Poderes vigentes</h3><div class="src">Otorgados y no revocados</div>${poderes}</section>
+      <section class="card wide"><h3>Línea de tiempo corporativa</h3><div class="src">Haz clic en un instrumento para ver su detalle</div>${timeline}</section>
+      <section class="card wide"><h3>Antecedentes corporativos</h3><div class="src">Todos los instrumentos en orden cronológico, redactados con las fórmulas de la notaría</div>
+        ${V.movs.length ? (() => { const hp = histPorId(V.movs, S); const lista = sortMovs(V.movs); return `<div class="tl-filters" style="margin-bottom:10px"><button class="btn small" type="button" data-act="copiar" data-src="antOut">Copiar antecedentes</button></div><div id="antOut" style="display:flex;flex-direction:column;gap:12px;font-family:var(--f-display);font-size:15px;text-align:justify;max-width:85ch">${lista.map((m, i) => `<p style="margin:0">${esc(antecedenteNotarial(m, hp.get(m.id), soc, i))}</p>`).join('')}</div>`; })() : '<p class="muted">Sin instrumentos capturados.</p>'}</section>
+      <section class="card wide"><h3>Estatutos vigentes</h3><div class="src">${S.ultimaReforma ? 'Última reforma: ' + esc(fuente(S.ultimaReforma.m)) + (S.ultimaReforma.clausulas ? ' · cláusulas ' + esc(S.ultimaReforma.clausulas) : '') : 'Sin reformas capturadas'}</div>
+        <dl class="kv"><dt>Denominación</dt><dd>${esc(S.denominacion || '—')}${S.regimen ? ', ' + esc(S.regimen) : ''}</dd><dt>Domicilio</dt><dd>${esc(S.domicilio || '—')}</dd><dt>Duración</dt><dd>${esc(S.duracion || '—')}</dd><dt>Extranjeros</dt><dd>${S.extranjeros ? esc(S.extranjeros.clausula) : '—'}</dd><dt>Objeto</dt><dd>${esc(S.objeto || '—')}</dd></dl></section>
+    </div>`;
+  } else if (V.tab === 'movs'){
+    const list = sortMovs(V.movs).reverse();
+    body = list.length ? `<ol class="timeline">${list.map(m => `<li class="mov"><div class="date">${fdate(m.instrumento?.fecha)}</div><div>
+        <h4>${esc(instrLabel(m))}</h4><div class="muted" style="font-size:13px">${esc(fedLabel(m) || 'Fedatario no capturado')}</div>${actoLabel(m) ? `<div style="font-size:13px;margin-top:2px">${esc(actoLabel(m).replace(/^./, c => c.toUpperCase()))}</div>` : ''}
+        <div class="chips">${(m.acuerdos || []).map(a => `<span class="chip">${esc(TIPOS[a.tipo] || 'Acuerdo')}</span>`).join('')}${m.instrumento?.tipo === 'Acta de asamblea' ? '' : inscrito(m) ? `<span class="chip ok">Inscrito${m.inscripcion.fecha ? ' ' + esc(fdate(m.inscripcion.fecha)) : ''}${m.inscripcion.folio ? ' · ' + esc(m.inscripcion.folio) : ''}</span>` : '<span class="chip warn">Sin datos de inscripción</span>'}</div>
+        ${m.resumen ? `<p style="margin:4px 0">${esc(m.resumen)}</p>` : ''}
+        <ul>${(m.acuerdos || []).map(a => `<li>${esc(describe(a, vn))}</li>`).join('')}</ul>
+        ${canWrite ? `<div class="row-acts" id="acts-${esc(m.id)}"><button class="btn small" type="button" data-act="editmov" data-id="${esc(m.id)}">Editar</button><button class="btn small ghost" type="button" data-act="delmov" data-id="${esc(m.id)}">Eliminar</button></div>` : ''}
+      </div></li>`).join('')}</ol>` : `<div class="empty"><h2>Sin instrumentos</h2><p>Empieza por la escritura constitutiva. Puedes cargar el PDF y dejar que Claude llene la captura.</p>${canWrite ? '<button class="btn primary" type="button" data-act="nuevomov">Registrar instrumento</button>' : ''}</div>`;
+  } else if (V.tab === 'personalidad'){
+    const P = soc.personalidadIA;
+    const opciones = [...(S.admin?.miembros || []).map(r => `${r.nombre}|${r.cargo || S.admin.forma || 'Administrador'}`), ...[...S.poderes.values()].map(p => `${p.apoderado}|Apoderado`)];
+    body = `<div class="grid2">
+      <section class="card wide"><h3>Legal existencia y personalidad</h3><div class="src">Claude redacta el texto a partir de los instrumentos capturados, con el estilo de la notaría. Revísalo siempre contra las escrituras originales antes de usarlo.</div>
+        <div class="fgrid" style="margin-bottom:12px">
+          <label class="f"><span>Compareciente</span><select id="perComp"><option value="">Solo legal existencia</option>${opciones.map(o => `<option value="${esc(o)}" ${P?.comp === o ? 'selected' : ''}>${esc(o.split('|')[0])} · ${esc(o.split('|')[1])}</option>`).join('')}</select></label>
+          <label class="f"><span>Acto en que comparece (opcional)</span><input id="perActo" value="${esc(P?.acto || '')}" placeholder="Compraventa, protocolización, poder…"></label>
+        </div>
+        <div class="confirm">${V.movs.length ? `<button class="btn primary" type="button" data-act="per" ${V.ia.busy ? 'disabled' : ''}>${P ? 'Redactar de nuevo' : 'Redactar legal existencia'}</button>${V.ia.busy ? '<button class="btn" type="button" data-act="iastop">Detener</button>' : ''}${P ? '<button class="btn" type="button" data-act="copiar" data-src="perOut">Copiar texto</button>' : ''}` : '<span class="muted">Captura primero los instrumentos de la sociedad.</span>'}<span class="status muted" id="perMsg"></span></div>
+        <div class="ia-out" id="perOut" style="margin-top:14px;font-family:var(--f-display);font-size:15.5px;text-align:justify">${P ? esc(P.texto) : ''}</div>
+        ${P ? `<p class="muted" style="font-size:12px;margin:10px 0 0">Redactado el ${esc(new Date(P.fecha).toLocaleString('es-MX', {dateStyle:'medium', timeStyle:'short'}))} con ${P.n} instrumentos.${P.n !== V.movs.length ? ' <b>Hay instrumentos nuevos desde entonces.</b>' : ''}</p>` : ''}
+      </section></div>`;
+  } else {
+    const list = sortMovs(V.movs);
+    const ia = soc.resumenIA;
+    body = `<div class="grid2">
+      <section class="card wide"><h3>Resumen ejecutivo</h3><div class="src">${ia ? 'Redactado por Claude el ' + esc(new Date(ia.fecha).toLocaleString('es-MX', {dateStyle:'medium', timeStyle:'short'})) + ' con ' + ia.n + ' instrumentos' : 'Claude redacta un resumen a partir de los instrumentos capturados'}${ia && ia.n !== V.movs.length ? ' · <b>hay instrumentos nuevos desde entonces</b>' : ''}</div>
+        <div class="ia-out" id="iaOut">${ia ? esc(ia.texto) : '<span class="muted">Aún no hay resumen redactado.</span>'}</div>
+        <div class="confirm" style="margin-top:12px">${V.movs.length ? `<button class="btn primary" type="button" data-act="ia" ${V.ia.busy ? 'disabled' : ''}>${ia ? 'Redactar de nuevo' : 'Redactar resumen con Claude'}</button>${V.ia.busy ? '<button class="btn" type="button" data-act="iastop">Detener</button>' : ''}` : ''}<span class="status muted" id="iaMsg"></span></div></section>
+
+    </div>`;
+  }
+
+  const nAcuerdos = V.movs.reduce((n, m) => n + (m.acuerdos || []).length, 0);
+  const porTipo = {}; V.movs.forEach(m => (m.acuerdos || []).forEach(a => { porTipo[a.tipo] = (porTipo[a.tipo] || 0) + 1; }));
+  const desglose = Object.entries(porTipo).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${n} ${(TIPOS[k] || k).toLowerCase()}`).join(' · ');
+  const tb = Object.entries(porTipo).map(([k, n]) => `<i style="flex:${n};background:var(${TCOLOR[k] || '--c0'})" title="${esc(TIPOS[k] || k)}: ${n}"></i>`).join('');
+  const fConst = S.constitucion?.instrumento?.fecha;
+  const edad = fConst ? Math.floor((Date.now() - Date.parse(fConst)) / (365.25 * 864e5)) : null;
+  const giros = str(S.giros) ? str(S.giros).split(/\s*;\s*|\n/).filter(Boolean).slice(0, 3) : [];
+  M.innerHTML = `
+    <section class="idcard">
+      <div class="id-top"><div class="idrow"><div class="mono-av" aria-hidden="true">${esc(iniciales(S.denominacion || soc.denominacion))}</div><div style="min-width:0"><div class="eyebrow">Denominación</div><h2>${esc(S.denominacion || soc.denominacion || 'Sin denominación')}${S.regimen ? ', ' + esc(S.regimen) : ''}</h2>
+          <div class="pills">${S.regimen ? `<span class="pill">${esc(regLargo(S.regimen).toLowerCase().replace(/^./, c => c.toUpperCase()))}</span>` : ''}${edad != null ? `<span class="pill">${edad} ${edad === 1 ? 'año' : 'años'} de constituida</span>` : ''}${S.ie ? `<span class="pill ie">Inversión extranjera ${pf.format(S.ie.pct)}</span>` : ''}${S.alertas.length ? `<span class="pill warn">${S.alertas.length} ${S.alertas.length === 1 ? 'alerta' : 'alertas'}</span>` : V.movs.length ? '<span class="pill ok">Sin inconsistencias</span>' : ''}</div></div></div>
+        <div class="head acts" style="margin:0">${canWrite ? '<button class="btn" type="button" data-act="editsoc">Editar datos</button><button class="btn primary" type="button" data-act="nuevomov">Registrar instrumento</button>' : ''}</div></div>
+      <div class="id-stats">
+        <div class="stat"><span class="ico" style="background:var(--c7)">${IC.id}</span><span class="eyebrow">RFC de la sociedad</span>${soc.rfc ? `<span class="v mono">${esc(soc.rfc)}</span>` : `<span class="falta">Sin capturar</span>${canWrite ? '<small><button class="btn small ghost" style="padding:0" type="button" data-act="editsoc">Agregar RFC</button></small>' : ''}`}</div>
+        <div class="stat"><span class="ico" style="background:var(--c1)">${IC.folio}</span><span class="eyebrow">Folio mercantil electrónico</span>${soc.fme ? `<span class="v mono">${esc(soc.fme)}</span><small>${esc(registroDe(soc, V.movs))}</small>` : '<span class="falta">Sin capturar</span>'}</div>
+        <div class="stat"><span class="ico" style="background:var(--c3)">${IC.mov}</span><span class="eyebrow">Movimientos corporativos</span><span class="v">${nAcuerdos}</span>${tb ? `<div class="typebar">${tb}</div>` : ''}<small>${esc(desglose || 'Ninguno detectado')}</small></div>
+      </div>
+    </section>
+    <div class="facts">
+      <div class="fact"><span class="fi">${IC.cal}</span><div><span class="eyebrow">Fecha de constitución</span><span class="v">${fConst ? esc(fdate(fConst)) : '—'}</span><span style="font-size:12.5px">${S.constitucion ? esc(instrLabel(S.constitucion).replace(/^Escritura/, 'Escritura pública')) : ''}</span><span class="muted" style="font-size:12px">${S.constitucion ? esc(fedLabel(S.constitucion) ? 'Ante ' + lic(S.constitucion.instrumento.fedatario).replace(/^Licenciad[oa] /, 'Lic. ') + (S.constitucion.instrumento.numFedatario ? `, ${S.constitucion.instrumento.tipo === 'Póliza' ? 'Corredor' : 'Notario'} ${S.constitucion.instrumento.numFedatario}` : '') + (S.constitucion.instrumento.plaza ? ' de ' + S.constitucion.instrumento.plaza : '') : 'Fedatario no capturado') : ''}</span></div></div>
+      <div class="fact"><span class="fi">${IC.pin}</span><div><span class="eyebrow">Domicilio social</span><span class="v">${esc(S.domicilio || '—')}</span></div></div>
+      <div class="fact"><span class="fi">${IC.clock}</span><div><span class="eyebrow">Duración</span><span class="v">${esc(S.duracion || '—')}</span></div></div>
+      <div class="fact"><span class="fi">${IC.globe}</span><div><span class="eyebrow">Cláusula de extranjeros</span><span class="v">${S.extranjeros ? esc(S.extranjeros.clausula.replace(' de extranjeros', '')) : '—'}</span>${S.ie ? `<span class="pill ie" style="align-self:flex-start;margin-top:2px">Con inversión extranjera</span>` : ''}<span class="muted" style="font-size:12px">${S.extranjeros ? esc(fuente(S.extranjeros.m)) : 'No capturada'}</span></div></div>
+      <div class="fact"><span class="fi">${IC.coins}</span><div><span class="eyebrow">Capital social</span><span class="v">${vn ? mf.format(C.tot.total * vn) : C.tot.total ? nf.format(C.tot.total) + ' ' + unidad : '—'}</span><span class="muted" style="font-size:12px">${C.tot.total ? `Fijo ${vn ? mf.format(C.tot.fijo * vn) : nf.format(C.tot.fijo)} · Variable ${vn ? mf.format(C.tot.variable * vn) : nf.format(C.tot.variable)}` : ''}</span></div></div>
+      <div class="fact"><span class="fi">${IC.users}</span><div><span class="eyebrow">Administración actual</span><span class="v">${S.admin ? esc(S.admin.forma || 'Órgano de administración') : '—'}</span><span class="muted" style="font-size:12px">${S.admin ? esc(S.admin.miembros.map(r => r.nombre).join(', ')) : ''}</span></div></div>
+      <div class="fact" style="grid-column:1/-1"><span class="fi">${IC.folio}</span><div><span class="eyebrow">Actividades principales</span>${giros.length ? `<div class="pills" style="margin-top:4px">${giros.map(g => `<span class="pill">${esc(g)}</span>`).join('')}</div>` : `<span class="v" style="font-weight:500">${esc(S.objeto ? S.objeto.slice(0, 220) + (S.objeto.length > 220 ? '…' : '') : '—')}</span>`}</div></div>
+    </div>
+    ${soc.notas ? `<p class="notice info" style="margin:0 0 16px">${esc(soc.notas)}</p>` : ''}
+    <div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button class="tab" role="tab" type="button" data-tab="${k}" aria-selected="${V.tab === k}">${l}</button>`).join('')}</div>
+    ${body}`;
+}
+
+/* ============ Modal genérico ============ */
+function openModal(html){ $('#modalRoot').innerHTML = `<div class="ovl" id="ovl"><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`; setTimeout(() => $('#ovl input, #ovl select, #ovl textarea')?.focus(), 30); }
+function closeModal(){ D.ctl?.abort(); $('#modalRoot').innerHTML = ''; D.draft = null; }
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#ovl')) closeModal(); });
+
+/* ============ Sociedad: alta y edición ============ */
+function socModal(soc){
+  D.fiscal = null;
+  const s = soc || {denominacion:'', regimen:'S.A. de C.V.', rfc:'', fme:'', domicilio:'', notas:''};
+  openModal(`<header><h2>${soc ? 'Datos de la sociedad' : 'Nueva sociedad'}</h2><button class="btn ghost" type="button" data-act="close" aria-label="Cerrar">✕</button></header>
+  <form id="socForm"><div class="body"><div class="fgrid">
+    <label class="f full"><span>Denominación</span><input id="s_den" required value="${esc(s.denominacion)}" placeholder="Como aparece en la constitutiva"></label>
+    <label class="f"><span>Régimen</span><input id="s_reg" list="dlReg" value="${esc(s.regimen)}"></label>
+    <label class="f"><span>RFC de la sociedad</span><input id="s_rfc" class="mono" value="${esc(s.rfc || '')}" placeholder="ABC123456XY1" autocapitalize="characters"></label>
+    <label class="f"><span>Folio mercantil electrónico</span><input id="s_fme" class="mono" value="${esc(s.fme)}" placeholder="N-2019012345"></label>
+    <label class="f full"><span>Registro donde está inscrita</span><input id="s_reg2" value="${esc(s.registro || '')}" placeholder="Registro Público de Comercio de Guadalajara, Jalisco"></label>
+    <label class="f full"><span>Inscripción en el Registro Nacional de Inversiones Extranjeras (si tiene inversión extranjera)</span><input id="s_rnie" value="${esc(s.rnie || '')}" placeholder="Folio o número de constancia y fecha"></label>
+    <label class="f full"><span>Domicilio social</span><input id="s_dom" value="${esc(s.domicilio)}" placeholder="Guadalajara, Jalisco"></label>
+    <label class="f full"><span>Notas internas</span><textarea id="s_not" placeholder="Cliente, abogado responsable, pendientes">${esc(s.notas)}</textarea></label>
+  </div>
+  <div class="reader"><p><b>Constancia de situación fiscal</b> <span class="muted">· opcional</span></p><p class="muted" style="font-size:13px">Sube el PDF de la constancia y Claude llena los datos fiscales y el RFC. Revisa antes de guardar.</p>
+    <div class="line"><input type="file" id="csfFile" accept="application/pdf,image/*" aria-label="Constancia de situación fiscal"><button class="btn" type="button" data-act="leercsf">Leer constancia</button><span class="status" id="csfMsg">${s.fiscal ? 'Datos fiscales cargados' + (s.fiscal.fechaEmision ? ' (constancia del ' + esc(fdate(s.fiscal.fechaEmision)) + ')' : '') + '.' : ''}</span></div></div>
+  ${soc ? '' : '<p class="muted" style="margin:0">Después de crearla te pido la escritura constitutiva. Puedes subir el PDF para que Claude llene la captura.</p>'}</div>
+  <footer><span class="msg" id="socMsg"></span>${soc ? '<span id="delZone"><button class="btn danger" type="button" data-act="delsoc">Eliminar sociedad</button></span>' : ''}<button class="btn" type="button" data-act="close">Cancelar</button><button class="btn primary" type="submit">${soc ? 'Guardar' : 'Crear y capturar constitutiva'}</button></footer></form>
+  <datalist id="dlReg">${REGIMENES.map(r => `<option value="${esc(r)}">`).join('')}</datalist>`);
+  $('#socForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const data = {...(D.fiscal ? {fiscal: D.fiscal} : {}), denominacion: str($('#s_den').value), regimen: str($('#s_reg').value), fme: str($('#s_fme').value), registro: str($('#s_reg2').value), rfc: str($('#s_rfc').value).toUpperCase(), rnie: str($('#s_rnie').value), domicilio: str($('#s_dom').value), notas: str($('#s_not').value)};
+    if (!data.denominacion){ $('#socMsg').textContent = 'Escribe la denominación.'; return; }
+    const id = soc?.id || store.newId();
+    const prev = soc ? Object.fromEntries(Object.entries(soc).filter(([k]) => k !== 'id')) : {creado: Date.now()};
+    try {
+      await store.saveSoc(id, {...prev, ...data, actualizado: Date.now()});
+      closeModal();
+      if (!soc){ selectSoc(id); const d = blankDraft(); const c = blankAcuerdo('constitucion'); c.denominacion = data.denominacion; c.regimen = data.regimen; c.domicilio = data.domicilio; d.acuerdos = [c]; movModal(null, d); }
+    } catch (err){ $('#socMsg').textContent = saveError(err); }
+  });
+}
+const saveError = e => e?.code === 'quota_exceeded' ? 'La base de datos está llena. Elimina expedientes que ya no uses.' : e?.code === 'invalid_argument' ? 'No tienes permiso para guardar en este expediente o el dato es demasiado grande.' : 'No se pudo guardar. Revisa tu conexión e intenta de nuevo.';
+
+/* ============ Instrumento: captura con acuerdos ============ */
+const D = {draft: null, editId: null, ctl: null, file: null, fiscal: null};
+function getPath(o, p){ return p.split('.').reduce((x, k) => x?.[k], o); }
+function setPath(o, p, v){ const ks = p.split('.'); const last = ks.pop(); const t = ks.reduce((x, k) => x[k], o); t[last] = v; }
+
+function fld(path, label, type = 'text', extra = ''){
+  const v = getPath(D.draft, path) ?? '';
+  if (type === 'textarea') return `<label class="f full"><span>${label}</span><textarea data-k="${path}" id="k_${path}">${esc(v)}</textarea></label>`;
+  if (type.startsWith('list:')) return `<label class="f"><span>${label}</span><input data-k="${path}" id="k_${path}" list="${type.slice(5)}" value="${esc(v)}"></label>`;
+  if (type.startsWith('sel:')) return `<label class="f"><span>${label}</span><select data-k="${path}" id="k_${path}">${type.slice(4).split('|').map(o => `<option ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select></label>`;
+  return `<label class="f ${extra}"><span>${label}</span><input data-k="${path}" id="k_${path}" type="${type}" value="${esc(v)}" ${type === 'number' ? 'step="any" inputmode="decimal"' : ''}></label>`;
+}
+function rowsEditor(path, kind, title){
+  const def = ROWDEF[kind];
+  const cols = def.map(d => d[3]).join(' ') + ' 32px';
+  const rows = getPath(D.draft, path) || [];
+  return `<div class="rows"><span class="eyebrow">${title}</span><div class="rows-wrap"><div class="rows-inner">
+    <div class="rowhead" style="grid-template-columns:${cols}">${def.map(d => `<span>${d[1]}</span>`).join('')}<span></span></div>
+    ${rows.map((r, i) => `<div class="row" style="grid-template-columns:${cols}">${def.map(([f, l, t]) => t === 'clase'
+      ? `<select data-k="${path}.${i}.${f}" id="k_${path}.${i}.${f}" aria-label="${l}"><option value="fijo" ${r[f] !== 'variable' ? 'selected' : ''}>Fijo</option><option value="variable" ${r[f] === 'variable' ? 'selected' : ''}>Variable</option></select>`
+      : `<input data-k="${path}.${i}.${f}" id="k_${path}.${i}.${f}" aria-label="${l}" type="${t}" ${t === 'number' ? 'step="any" inputmode="decimal"' : ''} value="${esc(r[f])}">`).join('')}
+      <button class="btn ghost small" type="button" data-act="delrow" data-k="${path}" data-i="${i}" aria-label="Quitar renglón">✕</button></div>`).join('')}
+  </div></div><div><button class="btn small" type="button" data-act="addrow" data-k="${path}" data-kind="${kind}">+ Renglón</button></div></div>`;
+}
+function acuerdoForm(a, i){
+  const p = `acuerdos.${i}`;
+  let inner = '';
+  switch (a.tipo){
+    case 'constitucion':
+      inner = `<div class="fgrid">${fld(p + '.denominacion', 'Denominación')}${fld(p + '.regimen', 'Régimen', 'list:dlReg')}${fld(p + '.domicilio', 'Domicilio')}${fld(p + '.duracion', 'Duración')}${fld(p + '.valorNominal', 'Valor nominal por acción ($)', 'number')}${fld(p + '.extranjeros', 'Cláusula de extranjeros', 'sel:' + CLAUSULAS_EXT.join('|'))}${fld(p + '.giros', 'Actividades principales (2 o 3, separadas por punto y coma)')}${fld(p + '.objeto', 'Objeto (resumen)', 'textarea')}</div>
+        ${rowsEditor(p + '.tenencias', 'tenencias', 'Suscripción inicial')}
+        <div class="fgrid">${fld(p + '.formaAdmin', 'Forma de administración', 'list:dlForma')}</div>
+        ${rowsEditor(p + '.miembros', 'miembros', 'Integrantes de la administración')}
+        ${rowsEditor(p + '.comisarios', 'comisarios', 'Comisario(s)')}`;
+      break;
+    case 'aumento': case 'disminucion':
+      inner = `${rowsEditor(p + '.tenencias', 'tenencias', a.tipo === 'aumento' ? 'Acciones suscritas' : 'Acciones amortizadas o reembolsadas')}<div class="fgrid">${fld(p + '.notas', 'Notas (forma de pago, prima, retiro)', 'textarea')}</div>`;
+      break;
+    case 'transmision': inner = rowsEditor(p + '.transmisiones', 'transmisiones', 'Transmisiones'); break;
+    case 'administracion': inner = `<div class="fgrid">${fld(p + '.formaAdmin', 'Forma de administración', 'list:dlForma')}</div>${rowsEditor(p + '.miembros', 'miembros', 'Integrantes (sustituye al órgano anterior)')}`; break;
+    case 'comisario': inner = rowsEditor(p + '.comisarios', 'comisarios', 'Comisario(s) (sustituye a los anteriores)'); break;
+    case 'poder': inner = rowsEditor(p + '.poderes', 'poderes', 'Poderes otorgados'); break;
+    case 'revocacion': inner = rowsEditor(p + '.revocados', 'revocados', 'Poderes revocados'); break;
+    case 'reforma': inner = `<div class="fgrid">${fld(p + '.clausulas', 'Cláusulas reformadas')}${fld(p + '.denominacion', 'Nueva denominación')}${fld(p + '.regimen', 'Nuevo régimen', 'list:dlReg')}${fld(p + '.domicilio', 'Nuevo domicilio')}${fld(p + '.duracion', 'Nueva duración')}${fld(p + '.valorNominal', 'Nuevo valor nominal ($)', 'number')}${fld(p + '.extranjeros', 'Nueva cláusula de extranjeros', 'sel:' + CLAUSULAS_EXT.join('|'))}${fld(p + '.giros', 'Nuevas actividades principales')}${fld(p + '.objeto', 'Nuevo objeto (resumen)', 'textarea')}</div><p class="muted" style="margin:0;font-size:12.5px">Llena solo lo que cambia.</p>`; break;
+    default: inner = `<div class="fgrid">${fld(p + '.descripcion', 'Descripción del acuerdo', 'textarea')}</div>`;
+  }
+  return `<fieldset class="acuerdo"><legend>${esc(TIPOS[a.tipo] || 'Acuerdo')}</legend><div class="ahead"><span class="muted" style="font-size:12.5px">Acuerdo ${i + 1}</span><button class="btn ghost small" type="button" data-act="delacuerdo" data-i="${i}">Quitar acuerdo</button></div>${inner}</fieldset>`;
+}
+function movModal(mov, preset){
+  D.editId = mov?.id || null;
+  D.draft = preset || (mov ? clone({instrumento: mov.instrumento, inscripcion: {fecha:'', folio:'', sede:'Guadalajara, Jalisco', ...(mov.inscripcion || {})}, resumen: mov.resumen || '', acuerdos: mov.acuerdos || []}) : blankDraft());
+  D.file = null;
+  openModal(`<header><h2>${mov ? 'Editar instrumento' : 'Registrar instrumento'}</h2><button class="btn ghost" type="button" data-act="close" aria-label="Cerrar">✕</button></header>
+    <form id="movForm"><div class="body" id="movBody"></div>
+    <footer><span class="msg" id="movMsg"></span><button class="btn" type="button" data-act="close">Cancelar</button><button class="btn primary" type="submit">Guardar instrumento</button></footer></form>
+    <datalist id="dlReg">${REGIMENES.map(r => `<option value="${esc(r)}">`).join('')}</datalist>
+    <datalist id="dlForma">${FORMAS.map(r => `<option value="${esc(r)}">`).join('')}</datalist>`);
+  renderMovBody();
+  $('#movForm').addEventListener('submit', saveMov);
+}
+function renderMovBody(){
+  const d = D.draft;
+  $('#movBody').innerHTML = `
+    <div class="reader" id="reader">
+      <p><b>Leer el instrumento con Claude</b> <span class="muted">· opcional</span></p>
+      <p class="muted" style="font-size:13px">Sube el PDF (o fotos de las hojas) o pega el texto. Claude propone la captura y tú la revisas antes de guardar. Nada se guarda sin tu clic.</p>
+      <div class="line"><input type="file" id="rdFile" accept="application/pdf,image/*" multiple aria-label="Archivo del instrumento"><label class="muted" style="font-size:13px">Páginas <input id="rdFrom" type="number" min="1" value="1" style="width:60px"> a <input id="rdTo" type="number" min="1" value="20" style="width:60px"></label></div>
+      <textarea id="rdText" placeholder="…o pega aquí el texto de la escritura o del acta"></textarea>
+      <div class="line"><button class="btn primary" type="button" data-act="leer">Extraer datos</button><button class="btn" type="button" data-act="leerstop" hidden id="rdStop">Detener</button><span class="status" id="rdMsg"></span></div>
+    </div>
+    <fieldset><legend>Instrumento</legend><div class="fgrid">
+      ${fld('instrumento.tipo', 'Tipo', 'sel:' + TIPOS_INSTR.join('|'))}${fld('instrumento.numero', 'Número')}${fld('instrumento.fecha', 'Fecha de otorgamiento', 'date')}
+      ${fld('instrumento.fedatario', 'Fedatario')}${fld('instrumento.numFedatario', 'Núm. de notaría o correduría')}${fld('instrumento.plaza', 'Plaza')}
+      ${fld('instrumento.adscripcion', 'Adscripción del fedatario (si es distinta)')}${fld('instrumento.actoTipo', 'Acto que se formaliza', 'sel:' + ACTOS.join('|'))}${fld('instrumento.actoFecha', 'Fecha del acta o resoluciones', 'date')}
+      ${fld('instrumento.rubro', 'Rubro para antecedentes (opcional)')}${fld('instrumento.contenido', 'Qué se aprobó, en redacción notarial (opcional)', 'textarea')}
+      ${fld('inscripcion.fecha', 'Fecha de inscripción en el RPC', 'date')}${fld('inscripcion.folio', 'Folio mercantil o dato registral')}${fld('inscripcion.sede', 'Sede del Registro Público')}
+      ${fld('rfcSociedad', 'RFC de la sociedad (si consta)')}
+      ${fld('resumen', 'Resumen (opcional)', 'textarea')}
+    </div></fieldset>
+    ${d.acuerdos.map(acuerdoForm).join('')}
+    <div class="add-acuerdo"><select id="newTipo" aria-label="Tipo de acuerdo">${Object.entries(TIPOS).map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select><button class="btn" type="button" data-act="addacuerdo">+ Agregar acuerdo</button><span class="muted" style="font-size:12.5px">Un instrumento puede contener varios acuerdos (p. ej. aumento + nombramiento + reforma).</span></div>`;
+}
+async function saveMov(e){
+  e.preventDefault();
+  const d = D.draft, msg = $('#movMsg');
+  if (!d.instrumento.fecha){ msg.textContent = 'Falta la fecha de otorgamiento.'; $('[data-k="instrumento.fecha"]')?.focus(); return; }
+  if (!d.acuerdos.length && !str(d.resumen)){ msg.textContent = 'Agrega al menos un acuerdo o un resumen.'; return; }
+  const soc = curSoc(); if (!soc) return;
+  const clean = clone(d);
+  for (const a of clean.acuerdos) for (const k of Object.keys(ROWDEF)) if (Array.isArray(a[k])) a[k] = a[k].filter(r => Object.entries(r).some(([f, v]) => f !== 'clase' && str(v)));
+  const prev = D.editId ? V.movs.find(m => m.id === D.editId) : null;
+  const id = D.editId || store.newId();
+  try {
+    await store.saveMov(soc.id, id, {...clean, creado: prev?.creado || Date.now(), actualizado: Date.now()});
+    const c = clean.acuerdos.find(a => a.tipo === 'constitucion');
+    const patch = {};
+    if (c && c.domicilio && !soc.domicilio) patch.domicilio = c.domicilio;
+    if (str(clean.rfcSociedad) && !soc.rfc) patch.rfc = str(clean.rfcSociedad).toUpperCase();
+    const fol = str(clean.inscripcion?.folio);
+    if (fol && !soc.fme && /^[A-Z]?-?\d/i.test(fol)) patch.fme = fol;
+    if (Object.keys(patch).length) await store.saveSoc(soc.id, {...Object.fromEntries(Object.entries(soc).filter(([k]) => k !== 'id')), ...patch, actualizado: Date.now()});
+    closeModal(); V.tab = 'actual'; renderMain();
+  } catch (err){ msg.textContent = saveError(err); }
+}
+
+/* ============ Lectura con Claude ============ */
+let sample = null, sampleImages = null, pdfReady = null;
+function loadPdfJs(){
+  if (pdfReady) return pdfReady;
+  const base = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+  const load = src => new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('pdf')); document.head.appendChild(s); });
+  pdfReady = load(base + 'pdf.min.js').then(() => load(base + 'pdf.worker.min.js')).then(() => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = base + 'pdf.worker.min.js'; return window.pdfjsLib; });
+  pdfReady.catch(() => { pdfReady = null; });
+  return pdfReady;
+}
+async function readPdf(file, from, to, say){
+  const lib = await loadPdfJs();
+  const doc = await lib.getDocument({data: new Uint8Array(await file.arrayBuffer())}).promise;
+  const a = Math.max(1, from), b = Math.min(doc.numPages, Math.max(a, to));
+  let text = '';
+  for (let p = a; p <= b; p++){
+    say(`Leyendo página ${p} de ${b}…`);
+    const tc = await (await doc.getPage(p)).getTextContent();
+    text += `\n[Página ${p}]\n` + tc.items.map(i => i.str).join(' ');
+  }
+  return {doc, text, a, b, pages: doc.numPages};
+}
+async function pagesToImages(doc, a, b, max, say){
+  const blobs = [];
+  for (let p = a; p <= b && blobs.length < max; p++){
+    say(`Preparando imagen de la página ${p}…`);
+    const page = await doc.getPage(p);
+    const v0 = page.getViewport({scale: 1});
+    const vp = page.getViewport({scale: Math.min(2, 1400 / v0.width)});
+    const cv = document.createElement('canvas'); cv.width = vp.width; cv.height = vp.height;
+    await page.render({canvasContext: cv.getContext('2d'), viewport: vp}).promise;
+    blobs.push(await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.82)));
+  }
+  return blobs;
+}
+const PROMPT = `Eres abogado corporativo en una notaría de Jalisco, México. Lee el instrumento (escritura pública, póliza o acta de asamblea) de una sociedad mercantil y extrae su contenido corporativo.
+Devuelve SOLO un objeto JSON con esta forma:
+{"instrumento":{"tipo":"Escritura pública|Póliza|Acta de asamblea|Otro","numero":"","fecha":"AAAA-MM-DD","fedatario":"nombre del notario o corredor","numFedatario":"número de notaría o correduría","plaza":"ciudad, estado","actoTipo":"uno de: Constitución de sociedad | Asamblea General Ordinaria de Accionistas | Asamblea General Extraordinaria de Accionistas | Asamblea General Ordinaria y Extraordinaria de Accionistas | Asamblea Especial de Accionistas | Asamblea de Socios | Resoluciones unánimes adoptadas fuera de asamblea | Sesión del Consejo de Administración | Otorgamiento o revocación de poderes | Otro","actoFecha":"fecha del acta que se protocoliza, AAAA-MM-DD","rubro":"rubro breve en mayúsculas de lo que contiene, p. ej. AUMENTO AL CAPITAL SOCIAL EN SU PARTE FIJA Y MODIFICACIÓN PARCIAL A LOS ESTATUTOS","contenido":"qué se aprobó en redacción notarial, p. ej. el aumento al capital social en su parte fija, así como modificar el artículo décimo de los estatutos sociales"},
+ "inscripcion":{"fecha":"AAAA-MM-DD o vacío","folio":"folio mercantil electrónico (p. ej. N-2019097654) o dato registral antiguo (p. ej. Documento número 7541), si consta","sede":"ciudad del Registro Público de Comercio"},
+ "rfcSociedad":"RFC de la sociedad si consta en el documento","resumen":"una o dos frases",
+ "acuerdos":[ ... ]}
+Cada acuerdo es un objeto con "tipo" y sus campos:
+- "constitucion": denominacion, regimen (p. ej. "S.A. de C.V."), domicilio, duracion, objeto (resumen breve), giros (2 o 3 actividades principales del objeto, frases cortas separadas por punto y coma), valorNominal (número), extranjeros ("Admisión de extranjeros" o "Exclusión de extranjeros", según la cláusula de los estatutos; "" si no consta), tenencias [{socio, nacionalidad (solo si consta en el documento, p. ej. "mexicana", "estadounidense"; si es persona moral, la de la sociedad), serie, clase:"fijo"|"variable", acciones (número)}], formaAdmin ("Administrador Único" o "Consejo de Administración", etc.), miembros [{nombre, cargo}], comisarios [{nombre, cargo}]
+- "aumento" / "disminucion": tenencias [{socio, nacionalidad, serie, clase, acciones}] con las acciones suscritas o canceladas por cada socio, notas
+- "transmision": transmisiones [{de, a, nacionalidad (del adquirente, si consta), serie, clase, acciones}]
+- "administracion": formaAdmin, miembros [{nombre, cargo}] (el órgano completo que queda vigente)
+- "comisario": comisarios [{nombre, cargo}]
+- "poder": poderes [{apoderado, facultades (p. ej. "pleitos y cobranzas, actos de administración"), notas (limitaciones, vigencia, mancomunado)}]
+- "revocacion": revocados [{apoderado}]
+- "reforma": clausulas, y solo los campos que cambian: denominacion, regimen, domicilio, duracion, objeto, giros, valorNominal, extranjeros (si se modifica la cláusula de admisión o exclusión de extranjeros)
+- "otro": descripcion
+Reglas: no inventes nada; si un dato no consta deja "" (o 0 en números). Escribe los nombres tal como aparecen. Si el capital es de sociedad de responsabilidad limitada, usa "acciones" para el número de partes sociales y valorNominal para el valor de cada una (si son partes de distinto valor, usa 1 como valor nominal y el monto en pesos como número). Fechas en formato AAAA-MM-DD. No incluyas RFC, CURP ni datos de identificación de personas físicas; el RFC de la sociedad sí, en rfcSociedad.`;
+
+function fromAI(j){
+  const d = blankDraft();
+  const I = j?.instrumento || {};
+  d.instrumento = {tipo: TIPOS_INSTR.includes(str(I.tipo)) ? str(I.tipo) : 'Escritura pública', numero: str(I.numero), fecha: isoOr(I.fecha), fedatario: str(I.fedatario), numFedatario: str(I.numFedatario), plaza: str(I.plaza), actoTipo: ACTOS.includes(str(I.actoTipo)) ? str(I.actoTipo) : (str(I.actoTipo) ? 'Otro' : ''), actoFecha: isoOr(I.actoFecha), adscripcion:'', rubro: str(I.rubro), contenido: str(I.contenido)};
+  d.inscripcion = {fecha: isoOr(j?.inscripcion?.fecha), folio: str(j?.inscripcion?.folio), sede: str(j?.inscripcion?.sede) || 'Guadalajara, Jalisco'};
+  d.resumen = str(j?.resumen);
+  d.rfcSociedad = str(j?.rfcSociedad).toUpperCase().replace(/[^A-Z0-9&Ñ]/g, '');
+  d.acuerdos = (Array.isArray(j?.acuerdos) ? j.acuerdos : []).map(a => {
+    const tipo = TIPOS[a?.tipo] ? a.tipo : 'otro';
+    const b = blankAcuerdo(tipo);
+    for (const k of Object.keys(b)){
+      if (k === 'tipo') continue;
+      if (Array.isArray(b[k])){
+        const def = ROWDEF[k];
+        b[k] = (Array.isArray(a[k]) ? a[k] : []).map(r => Object.fromEntries(def.map(([f,, t]) => [f, t === 'number' ? (num(r?.[f]) || '') : t === 'clase' ? (/var/i.test(str(r?.[f])) ? 'variable' : 'fijo') : str(r?.[f])])));
+      } else b[k] = k === 'valorNominal' ? (num(a[k]) || '') : k === 'extranjeros' ? normClausula(a[k]) : str(a[k]);
+    }
+    if (tipo === 'otro' && !b.descripcion) b.descripcion = str(a?.descripcion || a?.tipo);
+    return b;
+  });
+  return d;
+}
+async function leer(){
+  const say = t => { const el = $('#rdMsg'); if (el) el.textContent = t; };
+  if (!sample){ say('Esta función solo está disponible al abrir la página en claude.ai.'); return; }
+  const files = [...($('#rdFile').files || [])];
+  const pasted = str($('#rdText').value);
+  if (!files.length && !pasted){ say('Sube un archivo o pega el texto primero.'); return; }
+  const from = Math.max(1, num($('#rdFrom').value) || 1), to = Math.max(from, num($('#rdTo').value) || from + 19);
+  D.ctl?.abort(); D.ctl = new AbortController();
+  const btnStop = $('#rdStop'); btnStop.hidden = false;
+  try {
+    let input = PROMPT, images;
+    const maxImg = sampleImages?.maxCount || 0;
+    const pdf = files.find(f => f.type === 'application/pdf');
+    const imgs = files.filter(f => f.type.startsWith('image/'));
+    if (pasted){
+      input += `\n\nTexto del instrumento:\n"""\n${pasted.slice(0, 150000)}\n"""`;
+    } else if (pdf){
+      say('Cargando el lector de PDF…');
+      const r = await readPdf(pdf, from, to, say);
+      const useful = r.text.replace(/\[Página \d+\]/g, '').replace(/\s+/g, '').length;
+      if (useful > 400 * (r.b - r.a + 1) * 0.25){
+        input += `\n\nTexto del instrumento (páginas ${r.a} a ${r.b} de ${r.pages}):\n"""\n${r.text.slice(0, 150000)}\n"""`;
+      } else {
+        if (!maxImg){ say('El PDF parece escaneado y esta vista no puede enviar imágenes. Pega el texto o usa un PDF con texto.'); return; }
+        images = await pagesToImages(r.doc, r.a, r.b, maxImg, say);
+        input += `\n\nLas imágenes adjuntas son las páginas ${r.a} a ${r.a + images.length - 1} de ${r.pages} del instrumento escaneado.`;
+      }
+    } else if (imgs.length){
+      if (!maxImg){ say('Esta vista no puede enviar imágenes a Claude. Pega el texto.'); return; }
+      images = imgs.slice(0, maxImg);
+      input += `\n\nLas imágenes adjuntas son hojas del instrumento, en orden.`;
+    } else { say('Formato no reconocido. Usa PDF, imagen o texto.'); return; }
+    say('Claude está leyendo el instrumento… (puede tardar uno o dos minutos)');
+    const opts = {signal: D.ctl.signal, modelTier: 'default'};
+    if (images?.length) opts.images = images;
+    const j = await sample.json(input, opts);
+    const nd = fromAI(j);
+    const keep = D.draft;
+    D.draft = nd;
+    if (!nd.instrumento.fecha && keep.instrumento.fecha) nd.instrumento.fecha = keep.instrumento.fecha;
+    renderMovBody();
+    $('#rdMsg').textContent = `Listo: ${nd.acuerdos.length} acuerdo(s) detectados. Revisa cada campo antes de guardar.`;
+  } catch (err){
+    const c = err?.code;
+    say(c === 'cancelled' ? 'Lectura detenida.' : c === 'not_granted' || c === 'sampling_disabled' ? 'Claude no tiene permiso en esta página. Actívalo en el menú de permisos del artifact.' : c === 'rate_limited' ? 'Demasiadas solicitudes. Espera un momento e intenta de nuevo.' : c === 'invalid_json' ? 'Claude no devolvió una captura válida. Intenta con menos páginas.' : c === 'prompt_too_large' ? 'El texto es demasiado largo. Reduce el rango de páginas.' : c === 'image_rejected' ? 'Alguna imagen no se pudo leer. Prueba con otra.' : err?.message === 'pdf' ? 'No se pudo cargar el lector de PDF.' : 'No se pudo leer el instrumento. Intenta de nuevo.');
+    console.warn(err);
+  } finally { const b = $('#rdStop'); if (b) b.hidden = true; }
+}
+
+async function leerCSF(){
+  const say = t => { const el = $('#csfMsg'); if (el) el.textContent = t; };
+  if (!sample){ say('Disponible al abrir la página en claude.ai.'); return; }
+  const f = $('#csfFile').files?.[0]; if (!f){ say('Elige el PDF de la constancia.'); return; }
+  const P = 'Lee esta Constancia de Situación Fiscal del SAT de una persona moral mexicana y devuelve SOLO JSON: {"rfc":"","razonSocial":"","regimenCapital":"","estatus":"estatus en el padrón","fechaInicio":"AAAA-MM-DD","fechaEmision":"AAAA-MM-DD (lugar y fecha de emisión)","domicilioFiscal":"calle, número, colonia, CP, municipio, estado","regimenes":["régimen fiscal"],"actividades":[{"actividad":"","porcentaje":"","desde":"AAAA-MM-DD"}]}. No inventes; deja "" si no consta.';
+  try {
+    let input = P, images;
+    if (f.type === 'application/pdf'){
+      say('Leyendo el PDF…');
+      const r = await readPdf(f, 1, 4, say);
+      if (r.text.replace(/\[Página \d+\]|\s/g, '').length > 300) input += '\n\nTexto de la constancia:\n<<<\n' + r.text.slice(0, 60000) + '\n>>>';
+      else { if (!sampleImages?.maxCount){ say('El PDF está escaneado y esta vista no puede enviar imágenes.'); return; } images = await pagesToImages(r.doc, r.a, r.b, Math.min(4, sampleImages.maxCount), say); }
+    } else { if (!sampleImages?.maxCount){ say('Esta vista no puede enviar imágenes.'); return; } images = [f]; }
+    say('Claude está leyendo la constancia…');
+    const j = await sample.json(input, images ? {images} : {});
+    D.fiscal = {rfc: str(j.rfc).toUpperCase(), razonSocial: str(j.razonSocial), regimenCapital: str(j.regimenCapital), estatus: str(j.estatus), fechaInicio: isoOr(j.fechaInicio), fechaEmision: isoOr(j.fechaEmision), domicilioFiscal: str(j.domicilioFiscal), regimenes: (j.regimenes || []).map(str).filter(Boolean), actividades: (j.actividades || []).map(a => ({actividad: str(a.actividad), porcentaje: str(a.porcentaje), desde: isoOr(a.desde)})).filter(a => a.actividad)};
+    if (D.fiscal.rfc && !str($('#s_rfc').value)) $('#s_rfc').value = D.fiscal.rfc;
+    say('Listo: ' + (D.fiscal.rfc || 'sin RFC') + ' · ' + D.fiscal.actividades.length + ' actividades. Guarda para aplicar.');
+  } catch (err){ say(err?.code === 'not_granted' ? 'Claude no tiene permiso en esta página.' : 'No se pudo leer la constancia.'); console.warn(err); }
+}
+
+/* ============ Resumen ejecutivo con Claude ============ */
+async function redactar(){
+  const soc = curSoc(); if (!soc || !sample) { $('#iaMsg') && ($('#iaMsg').textContent = 'Disponible al abrir la página en claude.ai.'); return; }
+  const S = compute(soc, V.movs), C = cuadro(S), vn = S.valorNominal;
+  const crono = sortMovs(V.movs).map(m => `- ${m.instrumento?.fecha || 's/f'} · ${instrLabel(m)} (${fedLabel(m) || 's/d'}) · ${inscrito(m) ? 'inscrito' : 'sin datos de inscripción'}: ${(m.acuerdos || []).map(a => describe(a, vn)).join(' ')} ${m.resumen || ''}`).join('\n');
+  const cuadroTxt = C.rows.map(r => `- ${r.socio} serie ${r.serie || '—'}: ${r.fijo} fijo, ${r.variable} variable (${C.tot.total ? (r.total / C.tot.total * 100).toFixed(2) : 0}%)`).join('\n');
+  const input = `Eres abogado corporativo de una notaría en Guadalajara, Jalisco. Redacta en español un resumen ejecutivo del expediente de la sociedad, para un abogado que la atiende por primera vez.
+Formato: un párrafo de 4 a 6 líneas con la historia corporativa; luego "Situación actual:" con viñetas (capital y cuadro accionario, cláusula de extranjeros e inversión extranjera, administración, comisario, poderes relevantes); luego "Puntos a revisar:" con viñetas (inconsistencias, instrumentos sin inscripción, datos faltantes). Usa solo los datos dados; no inventes. Sin markdown de encabezados; texto plano con guiones.
+
+Sociedad: ${S.denominacion}, ${S.regimen}. Folio mercantil: ${soc.fme || 'no capturado'}. Domicilio: ${S.domicilio || 'no capturado'}.
+Valor nominal: ${vn || 'no capturado'}. Capital total: ${C.tot.total} acciones (${C.tot.fijo} fijo, ${C.tot.variable} variable).
+Cuadro accionario:
+${cuadroTxt || '- sin datos'}
+Administración: ${S.admin ? (S.admin.forma + ': ' + S.admin.miembros.map(r => r.nombre + (r.cargo ? ' (' + r.cargo + ')' : '')).join('; ')) : 'no capturada'}
+Comisario: ${S.comisarios ? S.comisarios.lista.map(r => r.nombre).join('; ') : 'no capturado'}
+Poderes vigentes: ${[...S.poderes.values()].map(p => p.apoderado + ' (' + (p.facultades || 's/d') + ')').join('; ') || 'ninguno capturado'}
+Cláusula de extranjeros: ${S.extranjeros ? S.extranjeros.clausula + ' (' + fuente(S.extranjeros.m) + ')' : 'no capturada'}
+Inversión extranjera: ${S.ie ? (S.ie.pct * 100).toFixed(2) + '% del capital: ' + S.ie.rows.map(r => r.socio + ' (' + r.nacionalidad + ')').join('; ') + '. RNIE: ' + (soc.rnie || 'no capturado') : 'no hay titulares extranjeros capturados'}
+Alertas del sistema: ${S.alertas.map(a => a.txt).join(' | ') || 'ninguna'}
+Cronología:
+${crono}`;
+  V.ia.ctl?.abort(); V.ia.ctl = new AbortController(); V.ia.busy = true; renderMain();
+  const out = () => $('#iaOut');
+  out().innerHTML = '<span class="muted">Claude está redactando…</span>';
+  try {
+    const {text} = await sample(input, {signal: V.ia.ctl.signal, onText: ({text}) => { if (out()) out().textContent = text; }});
+    V.ia.busy = false;
+    await store.saveSoc(soc.id, {...Object.fromEntries(Object.entries(soc).filter(([k]) => k !== 'id')), resumenIA: {texto: text, fecha: Date.now(), n: V.movs.length}, actualizado: Date.now()});
+    renderMain();
+  } catch (err){
+    V.ia.busy = false; renderMain();
+    const m = $('#iaMsg'); if (m) m.textContent = err?.code === 'cancelled' ? 'Redacción detenida.' : err?.code === 'not_granted' ? 'Claude no tiene permiso en esta página.' : err?.code === 'rate_limited' ? 'Demasiadas solicitudes. Intenta en un momento.' : 'No se pudo redactar. Intenta de nuevo.';
+  }
+}
+
+/* ============ Legal existencia y personalidad ============ */
+const ESTILO = `Estilo real de la Notaría 26 de Guadalajara (tomado de proyectos de protocolización y poderes de 2026):
+- Cada párrafo inicia con "--- ". Encabezado de sección centrado con guiones: "------ LEGAL EXISTENCIA:" o "------ PERSONALIDAD:".
+- Primer renglón: "--- LEGAL EXISTENCIA DE LA SOCIEDAD MERCANTIL DENOMINADA "[DENOMINACIÓN]", [RÉGIMEN COMPLETO EN MAYÚSCULAS]."
+- Luego: "--- El señor [NOMBRE] acredita la legal existencia de la sociedad mercantil denominada "[...]", [...], con los siguientes instrumentos públicos que a continuación transcribo e inserto en lo conducente:"
+- Cada instrumento con número romano y rubro en mayúsculas (p. ej. "--- I.- CONSTITUCIÓN DE LA SOCIEDAD.-", "--- II.- TRANSMISIÓN DE ACCIONES Y NOMBRAMIENTO DE ADMINISTRADOR GENERAL ÚNICO.-") seguido del inserto entre comillas y puntos suspensivos: "…NÚMERO 38,245 TREINTA Y OCHO MIL DOSCIENTOS CUARENTA Y CINCO…- [lo conducente]…- ES PRIMER TESTIMONIO…- BOLETA DE INSCRIPCIÓN…- FME.- N-2019052541…". Como no tienes el texto de las escrituras, pon [INSERTAR EN LO CONDUCENTE] donde va la transcripción.
+- Los números de escritura y notaría van en cifra y letra ("44,179 cuarenta y cuatro mil ciento setenta y nueve"; "Notario Público número 29 veintinueve de Guadalajara, Jalisco"); las fechas como "26 veintiséis de septiembre de 2013 dos mil trece".
+- Los folios mercantiles se deletrean: "N-2019097654 letra N, guion, dos, cero, uno, nueve, ...".
+- Cierre: "--- El suscrito Notario Público Doy Fe de haber tenido a la vista los instrumentos públicos antes relacionados y/o insertos, mismos que me fueron presentados por el compareciente, de las que agregaré copia al apéndice o libro de documentos de este tomo."
+- Después: "--- DATOS DE REGISTRO.- La sociedad denominada "[...]", [...], se encuentra debidamente registrada bajo folio mercantil electrónico [folio deletreado], en el Registro Público de Comercio de GUADALAJARA, JALISCO."
+- Si hay compareciente con cargo o poder: "--- FACULTADES CON LAS QUE COMPARECE.-" con el inserto del nombramiento o poder, y la protesta: "que el carácter y facultades con que comparece a la firma del presente instrumento no le han sido revocadas, modificadas, limitadas ni restringidas en forma alguna y por lo tanto sus facultades y carácter están plenamente vigentes".`;
+async function redactarPersonalidad(){
+  const soc = curSoc(); const msg = t => { const m = $('#perMsg'); if (m) m.textContent = t; };
+  if (!soc) return; if (!sample){ msg('Disponible al abrir la página en claude.ai.'); return; }
+  const S = compute(soc, V.movs), vn = S.valorNominal;
+  const comp = $('#perComp').value, acto = str($('#perActo').value);
+  const datos = sortMovs(V.movs).map((m, i) => { const I = m.instrumento || {}; return `${i + 1}. Tipo: ${I.tipo}; número: ${I.numero || 's/d'}; fecha: ${I.fecha || 's/d'}; fedatario: ${I.fedatario || 's/d'}; número de notaría/correduría: ${I.numFedatario || 's/d'}; plaza: ${I.plaza || 's/d'}; acto: ${actoLabel(m) || 's/d'}; inscripción RPC: ${inscrito(m) ? `folio ${m.inscripcion.folio || 's/d'}, fecha ${m.inscripcion.fecha || 's/d'}` : 'sin datos'}; contenido: ${(m.acuerdos || []).map(a => describe(a, vn)).join(' ')} ${m.resumen || ''}`; }).join('\n');
+  const input = `Eres abogado de la Notaría 26 de Guadalajara, Jalisco. Redacta el apartado de LEGAL EXISTENCIA Y PERSONALIDAD de la sociedad para pegarlo directamente en una escritura.
+${ESTILO}
+Reglas: usa solo los datos dados; donde falte un dato escribe [FALTA: dato] para que el abogado lo complete; no inventes números, fechas, folios ni nombres. Escribe números de escritura y fechas también con letra entre paréntesis cuando el estilo lo pida. Texto plano, sin markdown.
+
+Sociedad: ${S.denominacion}, ${S.regimen}. Folio mercantil electrónico: ${soc.fme || 'no capturado'}. Domicilio: ${S.domicilio || 'no capturado'}.
+Administración vigente: ${S.admin ? S.admin.forma + ': ' + S.admin.miembros.map(r => r.nombre + (r.cargo ? ' (' + r.cargo + ')' : '')).join('; ') + ' — según ' + fuente(S.admin.m) : 'no capturada'}
+Poderes vigentes: ${[...S.poderes.values()].map(p => `${p.apoderado} (${p.facultades || 's/d'}; ${p.notas || ''}) — según ${fuente(p.m)}`).join(' | ') || 'ninguno capturado'}
+Compareciente: ${comp ? comp.replace('|', ', en su carácter de ') : 'ninguno: redacta solo la legal existencia'}
+Acto en que comparece: ${acto || 'no especificado'}
+Instrumentos en orden cronológico:
+${datos}`;
+  V.ia.ctl?.abort(); V.ia.ctl = new AbortController(); V.ia.busy = true; renderMain();
+  const out = () => $('#perOut');
+  out().innerHTML = '<span class="muted">Claude está redactando…</span>';
+  try {
+    const {text} = await sample(input, {signal: V.ia.ctl.signal, cache: false, onText: ({text}) => { if (out()) out().textContent = text; }});
+    V.ia.busy = false;
+    await store.saveSoc(soc.id, {...Object.fromEntries(Object.entries(soc).filter(([k]) => k !== 'id')), personalidadIA: {texto: text, fecha: Date.now(), n: V.movs.length, comp, acto}, actualizado: Date.now()});
+    renderMain();
+  } catch (err){
+    V.ia.busy = false; renderMain();
+    msg(err?.code === 'cancelled' ? 'Redacción detenida.' : err?.code === 'not_granted' ? 'Claude no tiene permiso en esta página.' : err?.code === 'rate_limited' ? 'Demasiadas solicitudes. Intenta en un momento.' : 'No se pudo redactar. Intenta de nuevo.');
+  }
+}
+
+/* ============ Eventos ============ */
+document.addEventListener('click', async e => {
+  const t = e.target.closest('[data-act],[data-sid],[data-tab],[data-tl],[data-tlopen],[data-sh],[data-capv]');
+  if (!t) { if (e.target.id === 'ovl') closeModal(); return; }
+  if (t.dataset.sid){ selectSoc(t.dataset.sid); return; }
+  if (t.dataset.tab){ V.tab = t.dataset.tab; renderMain(); return; }
+  if (t.dataset.capv){ V.capVista = t.dataset.capv; try { localStorage.setItem('expcorp-capv', V.capVista); } catch {} renderMain(); return; }
+  if (t.dataset.tl){ V.tlFiltro = t.dataset.tl; renderMain(); return; }
+  if (t.dataset.tlopen){ const id = t.dataset.tlopen; V.tlOpen.has(id) ? V.tlOpen.delete(id) : V.tlOpen.add(id); renderMain(); return; }
+  if (t.dataset.sh !== undefined){ const k = keyOf(t.dataset.socio); if (!k) return; V.socioOpen = V.socioOpen === k ? null : k; renderMain(); return; }
+  const act = t.dataset.act;
+  if (act === 'close') return closeModal();
+  if (act === 'nueva') return socModal(null);
+  if (act === 'editsoc') return socModal(curSoc());
+  if (act === 'nuevomov') return movModal(null);
+  if (act === 'editmov') return movModal(V.movs.find(m => m.id === t.dataset.id));
+  if (act === 'delmov'){
+    const z = $('#acts-' + CSS.escape(t.dataset.id));
+    z.innerHTML = `<span class="confirm"><span style="font-size:13px">¿Eliminar este instrumento del expediente?</span><button class="btn small danger" type="button" data-act="delmovok" data-id="${esc(t.dataset.id)}">Sí, eliminar</button><button class="btn small" type="button" data-act="cancelrender">No</button></span>`;
+    return;
+  }
+  if (act === 'delmovok'){ try { await store.delMov(V.sid, t.dataset.id); } catch (err){ alertMain(saveError(err)); } return; }
+  if (act === 'cancelrender') return renderMain();
+  if (act === 'delsoc'){
+    $('#delZone').innerHTML = `<span class="confirm"><span style="font-size:13px">Se borran la sociedad y sus ${V.movs.length} instrumentos.</span><button class="btn small danger" type="button" data-act="delsocok">Confirmar</button></span>`;
+    return;
+  }
+  if (act === 'delsocok'){
+    const id = V.sid;
+    try { await store.delSoc(id, V.movs.map(m => m.id)); closeModal(); selectSoc(null); } catch (err){ $('#socMsg').textContent = saveError(err); }
+    return;
+  }
+  if (act === 'addrow'){ getPath(D.draft, t.dataset.k).push(blankRow(t.dataset.kind)); renderMovBody(); return; }
+  if (act === 'delrow'){ getPath(D.draft, t.dataset.k).splice(+t.dataset.i, 1); renderMovBody(); return; }
+  if (act === 'addacuerdo'){ D.draft.acuerdos.push(blankAcuerdo($('#newTipo').value)); renderMovBody(); $('#movBody').lastElementChild?.previousElementSibling?.scrollIntoView({block:'nearest'}); return; }
+  if (act === 'delacuerdo'){ D.draft.acuerdos.splice(+t.dataset.i, 1); renderMovBody(); return; }
+  if (act === 'leer') return leer();
+  if (act === 'leercsf') return leerCSF();
+  if (act === 'leerstop') return D.ctl?.abort();
+  if (act === 'ia') return redactar();
+  if (act === 'per') return redactarPersonalidad();
+  if (act === 'copiar'){ const el = $('#' + t.dataset.src); try { await navigator.clipboard.writeText(el.innerText); t.textContent = 'Copiado'; } catch { const r = document.createRange(); r.selectNodeContents(el); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); t.textContent = 'Texto seleccionado: usa Cmd+C'; } setTimeout(() => { t.textContent = 'Copiar texto'; }, 2500); return; }
+  if (act === 'iastop') return V.ia.ctl?.abort();
+});
+document.addEventListener('mouseover', e => {
+  const d = $('#donut'); if (!d) return;
+  const r = e.target.closest('tr.sh, circle.seg');
+  d.classList.toggle('hl', !!r);
+  d.querySelectorAll('circle.seg').forEach(c => c.classList.toggle('on', !!r && c.dataset.i === (r.dataset.sh ?? r.dataset.i)));
+  document.querySelectorAll('tr.sh').forEach(tr => tr.classList.toggle('on', !!r && tr.dataset.sh === (r.dataset.sh ?? r.dataset.i)));
+});
+document.addEventListener('input', e => {
+  const k = e.target.dataset?.k;
+  if (k && D.draft) setPath(D.draft, k, e.target.type === 'number' ? (e.target.value === '' ? '' : num(e.target.value)) : e.target.value);
+  if (e.target.id === 'q'){ V.q = e.target.value; renderList(); }
+});
+document.addEventListener('change', e => { const k = e.target.dataset?.k; if (k && D.draft && e.target.tagName === 'SELECT') setPath(D.draft, k, e.target.value); });
+$('#btnNueva').addEventListener('click', () => canWrite ? socModal(null) : null);
+function alertMain(txt){ const n = document.createElement('div'); n.className = 'alert bad'; n.textContent = txt; $('#main').prepend(n); setTimeout(() => n.remove(), 6000); }
+
+/* ============ Arranque ============ */
+renderList();
+(async () => {
+  const [d, u, s] = await Promise.all([window.claude?.use?.('db') ?? null, window.claude?.use?.('user') ?? null, window.claude?.use?.('sample') ?? null].map(p => Promise.resolve(p).catch(() => null)));
+  db = d; user = u; sample = s;
+  if (sample) sampleImages = (await sample.limits().catch(() => null))?.images || null;
+  if (!db){ setConn('warn', 'Modo prueba: no se guarda'); $('#main').insertAdjacentHTML('beforebegin', ''); }
+  if (user){ const w = await user.can('data.write').catch(() => null); canWrite = w !== false; if (!canWrite) $('#btnNueva').hidden = true; }
+  let saved = ''; try { saved = localStorage.getItem('expcorp-sid') || ''; V.capVista = localStorage.getItem('expcorp-capv') || V.capVista; } catch {}
+  store.listenSoc(list => {
+    V.socs = list; V.loaded = true;
+    if (!V.sid || !list.some(s => s.id === V.sid)){
+      const pick = list.find(s => s.id === saved) || [...list].sort((a, b) => (b.actualizado || 0) - (a.actualizado || 0))[0];
+      V.sid = null; if (pick) selectSoc(pick.id); else { renderList(); renderMain(); }
+    } else { renderList(); renderMain(); }
+  });
+})();
+</script>
+<script>
+setTimeout(async () => {
+  const G = 'Guadalajara, Jalisco';
+  const I = (tipo, numero, fecha, fed, num, extra = {}) => ({tipo, numero, fecha, fedatario: fed, numFedatario: num, plaza: G, adscripcion: '', actoTipo: '', actoFecha: '', rubro: '', contenido: '', ...extra});
+  // Sociedad 1: nacional, varios movimientos
+  await store.saveSoc('altamira', {denominacion: 'Grupo Altamira Logística', regimen: 'S.A. de C.V.', rfc: 'GAL150312AB1', fme: 'N-2015000123', registro: 'Registro Público de Comercio de Guadalajara, Jalisco', domicilio: G, creado: 1, actualizado: 9,
+    fiscal: {rfc: 'GAL150312AB1', estatus: 'ACTIVO', fechaInicio: '2015-03-12', fechaEmision: '2026-10-01', domicilioFiscal: 'Av. Ejemplo 100, Col. Centro, C.P. 44100, Guadalajara, Jalisco', regimenes: ['General de Ley Personas Morales'], actividades: [{actividad: 'Servicios de autotransporte de carga general', porcentaje: '70'}, {actividad: 'Almacenamiento general', porcentaje: '30'}]}});
+  const mv = (id, o) => store.saveMov('altamira', id, o);
+  await mv('m1', {instrumento: I('Escritura pública', '12,450', '2015-03-12', 'Ana Ejemplo Torres', '10', {actoTipo: 'Constitución de sociedad'}), inscripcion: {fecha: '2015-04-02', folio: 'N-2015000123', sede: G}, acuerdos: [{tipo: 'constitucion', denominacion: 'Grupo Altamira Logística', regimen: 'S.A. de C.V.', domicilio: G, duracion: '99 años', objeto: 'Autotransporte de carga, almacenaje y logística.', giros: 'Autotransporte de carga; Almacenaje y distribución; Logística integral', valorNominal: 1000, extranjeros: 'Exclusión de extranjeros', tenencias: [{socio: 'Laura Martínez Ruiz', nacionalidad: 'mexicana', serie: 'A', clase: 'fijo', acciones: 30}, {socio: 'Jorge Ramírez Soto', nacionalidad: 'mexicana', serie: 'A', clase: 'fijo', acciones: 20}], formaAdmin: 'Administrador Único', miembros: [{nombre: 'Laura Martínez Ruiz', cargo: 'Administrador Único'}], comisarios: [{nombre: 'Pedro Gómez Lara', cargo: 'Propietario'}]}], creado: 1});
+  await mv('m2', {instrumento: I('Escritura pública', '15,210', '2018-06-20', 'Ana Ejemplo Torres', '10', {actoTipo: 'Asamblea General Extraordinaria de Accionistas', actoFecha: '2018-05-30'}), inscripcion: {fecha: '2018-07-15', folio: 'N-2015000123', sede: G}, acuerdos: [{tipo: 'aumento', tenencias: [{socio: 'Laura Martínez Ruiz', serie: 'B', clase: 'variable', acciones: 25}, {socio: 'Jorge Ramírez Soto', serie: 'B', clase: 'variable', acciones: 25}], notas: 'Pago en efectivo.'}], creado: 2});
+  await mv('m3', {instrumento: I('Póliza', '3,005', '2021-02-10', 'Carlos Muestra Díaz', '40', {actoTipo: 'Asamblea General Ordinaria de Accionistas', actoFecha: '2021-01-25'}), inscripcion: {fecha: '2021-03-01', folio: 'N-2015000123', sede: G}, acuerdos: [{tipo: 'transmision', transmisiones: [{de: 'Jorge Ramírez Soto', a: 'Inversiones Delta, S.A. de C.V.', nacionalidad: 'mexicana', serie: 'A', clase: 'fijo', acciones: 10}]}, {tipo: 'administracion', formaAdmin: 'Consejo de Administración', miembros: [{nombre: 'Laura Martínez Ruiz', cargo: 'Presidente'}, {nombre: 'Jorge Ramírez Soto', cargo: 'Secretario'}, {nombre: 'Sofía Herrera Paz', cargo: 'Tesorero'}]}], creado: 3});
+  await mv('m4', {instrumento: I('Escritura pública', '28,900', '2024-09-05', 'Ana Ejemplo Torres', '10', {actoTipo: 'Asamblea General Extraordinaria de Accionistas', actoFecha: '2024-08-20'}), inscripcion: {fecha: '2024-10-01', folio: 'N-2015000123', sede: G}, acuerdos: [{tipo: 'reforma', clausulas: 'tercera (objeto social)', giros: 'Autotransporte de carga; Almacenaje y distribución; Comercio exterior', objeto: 'Autotransporte, almacenaje, logística y servicios de comercio exterior.'}, {tipo: 'poder', poderes: [{apoderado: 'Sofía Herrera Paz', facultades: 'Pleitos y cobranzas y actos de administración', notas: 'Individual'}, {apoderado: 'Miguel Ángel Ortiz', facultades: 'Actos de administración en materia laboral', notas: 'Individual'}]}], creado: 4});
+  // Sociedad 2: con inversión extranjera
+  await store.saveSoc('pacifico', {denominacion: 'Tecnologías Pacífico', regimen: 'S. de R.L. de C.V.', rfc: 'TPA200115CD2', fme: 'N-2020000456', registro: 'Registro Público de Comercio de Guadalajara, Jalisco', domicilio: 'Zapopan, Jalisco', rnie: 'Expediente 1234567 (ejemplo)', creado: 2, actualizado: 5});
+  await store.saveMov('pacifico', 'm1', {instrumento: I('Escritura pública', '7,320', '2020-01-15', 'Ricardo Prueba León', '55'), inscripcion: {fecha: '2020-02-10', folio: 'N-2020000456', sede: G}, acuerdos: [{tipo: 'constitucion', denominacion: 'Tecnologías Pacífico', regimen: 'S. de R.L. de C.V.', domicilio: 'Zapopan, Jalisco', duracion: 'Indefinida', giros: 'Desarrollo de software; Consultoría tecnológica; Servicios en la nube', valorNominal: 1, extranjeros: 'Admisión de extranjeros', tenencias: [{socio: 'Pacific Holdings LLC', nacionalidad: 'estadounidense', serie: '', clase: 'fijo', acciones: 7000}, {socio: 'Elena Vidal Costa', nacionalidad: 'española', serie: '', clase: 'fijo', acciones: 2000}, {socio: 'Andrés Campos Rivera', nacionalidad: 'mexicana', serie: '', clase: 'fijo', acciones: 1000}], formaAdmin: 'Gerente General', miembros: [{nombre: 'Andrés Campos Rivera', cargo: 'Gerente General'}], comisarios: []}], creado: 1});
+  await store.saveSoc('rivera', {denominacion: 'Constructora Ribera Norte', regimen: 'S.A.P.I. de C.V.', rfc: 'CRN190820EF3', fme: 'N-2019000789', registro: 'Registro Público de Comercio de Guadalajara, Jalisco', domicilio: G, creado: 3, actualizado: 1});
+  await store.saveMov('rivera', 'm1', {instrumento: I('Escritura pública', '5,100', '2019-08-20', 'Ana Ejemplo Torres', '10'), inscripcion: {fecha: '2019-09-10', folio: 'N-2019000789', sede: G}, acuerdos: [{tipo: 'constitucion', denominacion: 'Constructora Ribera Norte', regimen: 'S.A.P.I. de C.V.', domicilio: G, duracion: '99 años', giros: 'Construcción de vivienda; Obra civil; Desarrollo inmobiliario', valorNominal: 100, extranjeros: 'Exclusión de extranjeros', tenencias: [{socio: 'Marta Ibarra Núñez', serie: 'A', clase: 'fijo', acciones: 500}, {socio: 'Raúl Ochoa Villa', serie: 'A', clase: 'fijo', acciones: 500}], formaAdmin: 'Consejo de Administración', miembros: [{nombre: 'Marta Ibarra Núñez', cargo: 'Presidente'}], comisarios: []}], creado: 1});
+  selectSoc('altamira');
+  setConn('ok', 'Datos de ejemplo');
+}, 600);
+
+</script>
